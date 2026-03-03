@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
     Settings,
     LayoutDashboard,
@@ -14,6 +15,7 @@ import { useSession, signIn, signOut } from "next-auth/react";
 
 export function Sidebar() {
     const { data: session } = useSession();
+    const pathname = usePathname();
 
     return (
         <aside className="w-64 h-screen bg-[#191919] border-r border-[#2d2d2d] flex flex-col text-[#ededed] text-sm overflow-y-auto hidden md:flex shrink-0">
@@ -31,10 +33,10 @@ export function Sidebar() {
 
             <div className="flex-1 overflow-y-auto py-2 px-3">
                 <div className="space-y-1">
-                    <NavItem icon={<LayoutDashboard className="w-4 h-4" />} label="Dashboard" />
-                    <NavItem icon={<CheckSquare className="w-4 h-4" />} label="Habit Tracker" active />
+                    <NavItem icon={<LayoutDashboard className="w-4 h-4" />} label="Dashboard" href="/" active={pathname === "/"} />
+                    <NavItem icon={<CheckSquare className="w-4 h-4" />} label="Habit Tracker" active={pathname === "/"} href="/" />
                     <NavItem icon={<Target className="w-4 h-4" />} label="Daily Goals" />
-                    <NavItem icon={<Wallet className="w-4 h-4" />} label="Finance Management" />
+                    <NavItem icon={<Wallet className="w-4 h-4" />} label="Finance Management" href="/finance" active={pathname === "/finance"} />
                 </div>
 
                 <div className="mt-8">
@@ -89,16 +91,18 @@ function NavItem({
     icon,
     label,
     active,
+    href = "#",
     indent
 }: {
     icon: React.ReactNode,
     label: string,
     active?: boolean,
+    href?: string,
     indent?: boolean
 }) {
     return (
         <Link
-            href="#"
+            href={href}
             className={cn(
                 "flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[#2d2d2d] transition-colors group text-gray-300 hover:text-white",
                 active && "bg-blue-600/10 text-blue-500 hover:text-blue-400 font-medium",
