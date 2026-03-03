@@ -16,8 +16,12 @@ export default function Home() {
   if (!session) {
     return (
       <div className="flex-1 h-full bg-[#111111] flex flex-col items-center justify-center p-6 text-center">
-        <div className="w-16 h-16 bg-blue-600/20 rounded-2xl flex items-center justify-center mb-6">
-          <Target className="w-8 h-8 text-blue-500" />
+        <div className="w-24 h-24 mb-6 drop-shadow-[0_0_25px_rgba(59,130,246,0.3)] bg-[#191919] p-4 rounded-3xl border border-[#2d2d2d]">
+          <img
+            src="/logo/logo_with_bg-removebg-preview.png"
+            alt="LifeTracker Logo"
+            className="w-full h-full object-contain"
+          />
         </div>
         <h1 className="text-3xl font-bold text-white mb-3">Welcome to LifeTracker</h1>
         <p className="text-[#888888] max-w-md mb-8">

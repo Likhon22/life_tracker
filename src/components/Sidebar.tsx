@@ -19,10 +19,14 @@ export function Sidebar() {
         <aside className="w-64 h-screen bg-[#191919] border-r border-[#2d2d2d] flex flex-col text-[#ededed] text-sm overflow-y-auto hidden md:flex shrink-0">
             {/* App Branding */}
             <div className="px-5 py-6 flex items-center gap-3">
-                <div className="w-8 h-8 bg-blue-600 shadow-[0_0_15px_rgba(37,99,235,0.5)] text-white text-lg flex items-center justify-center rounded-xl font-bold">
-                    L
+                <div className="w-10 h-10 flex items-center justify-center rounded-xl overflow-hidden drop-shadow-lg bg-[#222222]">
+                    <img
+                        src="/logo/logo_with_bg-removebg-preview.png"
+                        alt="LifeTracker Logo"
+                        className="w-full h-full object-contain p-1"
+                    />
                 </div>
-                <span className="font-bold text-lg tracking-tight">LifeTracker</span>
+                <span className="font-bold text-xl tracking-tight bg-gradient-to-r from-white to-[#888888] bg-clip-text text-transparent">LifeTracker</span>
             </div>
 
             <div className="flex-1 overflow-y-auto py-2 px-3">
