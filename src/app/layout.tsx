@@ -9,8 +9,55 @@ import { Toaster } from "react-hot-toast";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Habit Tracker",
-  description: "A premium, Notion-style habit tracker",
+  title: "Life Tracker - Premium Habit & Productivity Tool",
+  description: "A premium, Notion-style habit tracker that helps you stay on top of your habits and goals with deep analytics.",
+  keywords: ["habit tracker", "productivity", "life tracker", "goals", "performance analytics"],
+  authors: [{ name: "Likhon22" }],
+  creator: "Likhon22",
+  publisher: "Likhon22",
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
+  metadataBase: new URL('https://life-tracker-opal.vercel.app'),
+  alternates: {
+    canonical: '/',
+  },
+  openGraph: {
+    title: 'Life Tracker',
+    description: 'Track your habits and achieve your goals with premium analytics.',
+    url: 'https://life-tracker-opal.vercel.app',
+    siteName: 'Life Tracker',
+    images: [
+      {
+        url: '/logo/logo_with_bg.jpg',
+        width: 1200,
+        height: 630,
+        alt: 'Life Tracker Overview',
+      },
+    ],
+    locale: 'en_US',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Life Tracker',
+    description: 'A premium habit tracking application.',
+    images: ['/logo/logo_with_bg.jpg'],
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'Life Tracker',
+  },
+};
+
+export const viewport = {
+  themeColor: '#111111',
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
 };
 
 import { getServerSession } from "next-auth";
