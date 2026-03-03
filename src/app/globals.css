@@ -16,7 +16,7 @@
   html {
     color-scheme: dark;
   }
-  
+
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
@@ -28,13 +28,16 @@
     width: 6px;
     height: 6px;
   }
+
   ::-webkit-scrollbar-track {
     background: transparent;
   }
+
   ::-webkit-scrollbar-thumb {
     background: var(--color-border-subtle);
     border-radius: 3px;
   }
+
   ::-webkit-scrollbar-thumb:hover {
     background: var(--color-muted);
   }
@@ -46,5 +49,14 @@
     backdrop-filter: blur(10px);
     border: 1px solid var(--color-border-subtle);
     border-radius: 0.75rem;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
 }

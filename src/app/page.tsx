@@ -40,17 +40,17 @@ export default function Home() {
   return (
     <div className="flex-1 flex flex-col h-full bg-[#111111] overflow-y-auto">
       {/* Header */}
-      <header className="flex-none px-6 pt-10 pb-4 w-full">
+      <header className="flex-none px-4 md:px-6 pt-6 md:pt-10 pb-4 w-full">
         <div className="flex items-end gap-6 mb-2">
           <div className="flex flex-col gap-1">
-            <h1 className="text-3xl font-bold text-white tracking-tight">Habit Tracker Overview</h1>
-            <p className="text-[#888888] text-sm">Welcome back, {session.user?.name}. Here is a snapshot of your daily progress.</p>
+            <h1 className="text-2xl md:text-3xl font-bold text-white tracking-tight">Habit Tracker Overview</h1>
+            <p className="text-[#888888] text-xs md:text-sm">Welcome back, {session.user?.name}. Here is a snapshot of your daily progress.</p>
           </div>
         </div>
       </header>
 
       {/* Main Content Area */}
-      <div className="flex-1 px-16 w-full grid grid-cols-1 md:grid-cols-[320px_280px_1fr] gap-6 pb-12 items-start transition-all">
+      <div className="flex-1 px-4 md:px-6 w-full grid grid-cols-1 md:grid-cols-[320px_280px_1fr] gap-4 md:gap-6 pb-24 md:pb-12 items-start transition-all">
         {/* Left Column: Habit List */}
         <section className="col-span-1">
           <HabitList />

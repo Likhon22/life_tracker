@@ -65,6 +65,7 @@ export const viewport = {
   maximumScale: 1,
 };
 
+import { BottomNav } from "@/components/BottomNav";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
@@ -94,11 +95,12 @@ export default async function RootLayout({
             }}
           />
           {session && <Sidebar />}
-          <main className="flex-1 flex flex-col h-screen overflow-hidden">
+          <main className="flex-1 flex flex-col h-screen overflow-hidden pb-20 md:pb-0">
             <HabitProvider>
               {children}
             </HabitProvider>
           </main>
+          {session && <BottomNav />}
         </AuthProvider>
       </body>
     </html>

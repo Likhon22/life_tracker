@@ -254,8 +254,10 @@ export function HabitList() {
         }
     };
 
+    const [showHistoryMobile, setShowHistoryMobile] = useState(false);
+
     return (
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-4 md:gap-6">
             {dateRange.map((date, index) => {
                 const dateStr = format(date, "yyyy-MM-dd");
                 const isCurrentToday = isToday(date);
@@ -271,7 +273,8 @@ export function HabitList() {
                         key={dateStr}
                         className={cn(
                             "bg-[#191919] border border-[#2d2d2d] rounded-lg p-4 transition-all",
-                            isCurrentToday ? "ring-1 ring-blue-500/30 bg-[#1c1c1c]" : "opacity-80 hover:opacity-100"
+                            isCurrentToday ? "ring-1 ring-blue-500/30 bg-[#1c1c1c]" : "opacity-80 hover:opacity-100",
+                            !isCurrentToday && !showHistoryMobile && "hidden md:block"
                         )}
                     >
                         <div className="flex items-center justify-between mb-4 px-2">
@@ -376,6 +379,15 @@ export function HabitList() {
                     </div>
                 );
             })}
+
+            {!showHistoryMobile && dateRange.length > 1 && (
+                <button
+                    onClick={() => setShowHistoryMobile(true)}
+                    className="md:hidden w-full py-3 px-4 rounded-xl border border-white/5 bg-white/5 text-[#888888] font-medium text-sm flex items-center justify-center gap-2 hover:bg-white/10 transition-all active:scale-[0.98]"
+                >
+                    Show Monthly History
+                </button>
+            )}
         </div>
     );
 }

@@ -72,60 +72,60 @@ export function PerformanceChart() {
             </div>
 
             {/* Recharts Area */}
-            <div className="h-[400px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={chartData} margin={{ top: 20, right: 30, left: 10, bottom: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#2d2d2d" vertical={false} />
-                        <XAxis
-                            dataKey="date"
-                            stroke="#888888"
-                            fontSize={12}
-                            tickLine={false}
-                            axisLine={false}
-                            dy={10}
-                            // Only show a few ticks to match the image where it shows start, middle, end
-                            tickFormatter={(value, index) => {
-                                if (index === 0 || index === Math.floor(chartData.length / 2) || index === chartData.length - 1) {
-                                    return value;
-                                }
-                                return "";
-                            }}
-                        />
-                        <YAxis
-                            stroke="#888888"
-                            fontSize={12}
-                            tickLine={false}
-                            axisLine={false}
-                            domain={[0, 100]}
-                            tickFormatter={(value) => `${value}%`}
-                        />
-                        <Tooltip
-                            contentStyle={{ backgroundColor: '#191919', borderColor: '#2d2d2d', color: '#ededed', borderRadius: '8px' }}
-                            itemStyle={{ color: '#3b82f6' }}
-                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                            formatter={(value: any) => [`${value}%`, 'Completion Rate']}
-                            labelStyle={{ color: '#888888', marginBottom: '4px' }}
-                        />
-                        <Line
-                            type="linear"
-                            dataKey="rate"
-                            stroke="#3b82f6"
-                            strokeWidth={2}
-                            dot={{ r: 4, fill: "#191919", stroke: "#3b82f6", strokeWidth: 2 }}
-                            activeDot={{ r: 6, fill: "#3b82f6", stroke: "#111111", strokeWidth: 2 }}
-                            connectNulls={false}
-                        >
-                            <LabelList
-                                dataKey="rate"
-                                position="top"
-                                offset={10}
-                                fill="#888888"
-                                fontSize={10}
-                                formatter={(value: any) => value !== null && value !== undefined ? `${value}%` : ""}
+            <div className="h-[350px] md:h-[400px] w-full overflow-x-auto overflow-y-hidden no-scrollbar">
+                <div className="h-full min-w-[600px] md:min-w-0">
+                    <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={chartData} margin={{ top: 20, right: 30, left: 10, bottom: 0 }}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#2d2d2d" vertical={false} />
+                            <XAxis
+                                dataKey="date"
+                                stroke="#888888"
+                                fontSize={12}
+                                tickLine={false}
+                                axisLine={false}
+                                dy={10}
+                                tickFormatter={(value, index) => {
+                                    if (index === 0 || index === Math.floor(chartData.length / 2) || index === chartData.length - 1) {
+                                        return value;
+                                    }
+                                    return "";
+                                }}
                             />
-                        </Line>
-                    </LineChart>
-                </ResponsiveContainer>
+                            <YAxis
+                                stroke="#888888"
+                                fontSize={12}
+                                tickLine={false}
+                                axisLine={false}
+                                domain={[0, 100]}
+                                tickFormatter={(value) => `${value}%`}
+                            />
+                            <Tooltip
+                                contentStyle={{ backgroundColor: '#191919', borderColor: '#2d2d2d', color: '#ededed', borderRadius: '8px' }}
+                                itemStyle={{ color: '#3b82f6' }}
+                                formatter={(value: any) => [`${value}%`, 'Completion Rate']}
+                                labelStyle={{ color: '#888888', marginBottom: '4px' }}
+                            />
+                            <Line
+                                type="linear"
+                                dataKey="rate"
+                                stroke="#3b82f6"
+                                strokeWidth={2}
+                                dot={{ r: 4, fill: "#191919", stroke: "#3b82f6", strokeWidth: 2 }}
+                                activeDot={{ r: 6, fill: "#3b82f6", stroke: "#111111", strokeWidth: 2 }}
+                                connectNulls={false}
+                            >
+                                <LabelList
+                                    dataKey="rate"
+                                    position="top"
+                                    offset={10}
+                                    fill="#888888"
+                                    fontSize={10}
+                                    formatter={(value: any) => value !== null && value !== undefined ? `${value}%` : ""}
+                                />
+                            </Line>
+                        </LineChart>
+                    </ResponsiveContainer>
+                </div>
             </div>
 
             <div className="flex items-center justify-center mt-4">
