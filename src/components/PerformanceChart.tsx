@@ -134,7 +134,7 @@ export function PerformanceChart() {
                                 offset={10}
                                 fill="#888888"
                                 fontSize={10}
-                                formatter={(value: number) => value !== null ? `${value}%` : ""}
+                                formatter={(value: any) => value !== null && value !== undefined ? `${value}%` : ""}
                             />
                         </Line>
                     </LineChart>
