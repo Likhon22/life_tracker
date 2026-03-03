@@ -60,10 +60,16 @@ export default function FinancePage() {
                     <div className="grid grid-cols-1 lg:grid-cols-[400px_1fr] gap-6 md:gap-8 items-start">
 
                         {/* Left Column: Controls & Summary */}
-                        <div className="space-y-6 md:space-y-8">
-                            <BudgetSummary />
-                            <AddExpense />
-                            <FixedCosts />
+                        <div className="flex flex-col space-y-6 md:space-y-8">
+                            <div className="order-2 md:order-1">
+                                <BudgetSummary />
+                            </div>
+                            <div className="order-1 md:order-2">
+                                <AddExpense />
+                            </div>
+                            <div className="order-3">
+                                <FixedCosts />
+                            </div>
                         </div>
 
                         {/* Right Column: Analytics & List */}
