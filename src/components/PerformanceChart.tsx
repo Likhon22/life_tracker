@@ -24,29 +24,16 @@ export function PerformanceChart() {
         const targetDate = activeTab === "This Month" ? today : subMonths(today, 1);
 
         const start = startOfMonth(targetDate);
-        const end = endOfMonth(targetDate);
-        const daysInMonth = eachDayOfInterval({ start, end });
-
-        // For "This Month", we only want to show data up to today to avoid dropping the line to 0 for future dates
-        // If it's a past month, show all days
         const isCurrentMonth = activeTab === "This Month";
+        const end = isCurrentMonth ? today : endOfMonth(targetDate);
+
+        const daysInMonth = eachDayOfInterval({ start, end });
 
         return daysInMonth.map((date) => {
             const dateStr = format(date, "yyyy-MM-dd");
 
-            // If it's the current month and the date is after today, we can just return null or 0.
-            // But typically we show 0 or don't render the point. Let's return 0 for simplicity or null if Recharts supports it.
-            // Recharts connects nulls if connectNulls={true}, but we want the line to stop.
-            // Easiest is to only include days up to today for "This Month"
-            if (isCurrentMonth && date > today) {
-                return {
-                    date: format(date, "MMM d, yyyy"),
-                    rate: null, // Don't draw line for future dates
-                }
-            }
-
             return {
-                date: format(date, "MMM d, yyyy"),
+                date: format(date, "MMM d"),
                 rate: getDailyCompletionRate(dateStr),
             };
         });
@@ -87,7 +74,7 @@ export function PerformanceChart() {
             {/* Recharts Area */}
             <div className="h-[400px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={chartData} margin={{ top: 20, right: 30, left: -20, bottom: 0 }}>
+                    <LineChart data={chartData} margin={{ top: 20, right: 30, left: 10, bottom: 0 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#2d2d2d" vertical={false} />
                         <XAxis
                             dataKey="date"
@@ -110,7 +97,7 @@ export function PerformanceChart() {
                             tickLine={false}
                             axisLine={false}
                             domain={[0, 100]}
-                            tickFormatter={(value) => `${value}`}
+                            tickFormatter={(value) => `${value}%`}
                         />
                         <Tooltip
                             contentStyle={{ backgroundColor: '#191919', borderColor: '#2d2d2d', color: '#ededed', borderRadius: '8px' }}
@@ -144,7 +131,7 @@ export function PerformanceChart() {
             <div className="flex items-center justify-center mt-4">
                 <div className="flex items-center gap-2 text-xs text-[#888888]">
                     <div className="w-2 h-0.5 bg-blue-500"></div>
-                    <span>Rate</span>
+                    <span>Date</span>
                 </div>
             </div>
         </div>
