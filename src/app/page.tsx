@@ -40,9 +40,9 @@ export default function Home() {
   return (
     <div className="flex-1 flex flex-col h-full bg-[#111111] overflow-y-auto">
       {/* Header */}
-      <header className="flex-none px-12 pt-12 pb-6 max-w-7xl mx-auto w-full">
+      <header className="flex-none px-6 pt-10 pb-4 w-full">
         <div className="flex items-end gap-6 mb-2">
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-1">
             <h1 className="text-3xl font-bold text-white tracking-tight">Habit Tracker Overview</h1>
             <p className="text-[#888888] text-sm">Welcome back, {session.user?.name}. Here is a snapshot of your daily progress.</p>
           </div>
@@ -50,7 +50,7 @@ export default function Home() {
       </header>
 
       {/* Main Content Area */}
-      <div className="flex-1 px-12 max-w-7xl mx-auto w-full grid grid-cols-1 md:grid-cols-[300px_250px_1fr] gap-8 pb-12 items-start">
+      <div className="flex-1 px-16 w-full grid grid-cols-1 md:grid-cols-[320px_280px_1fr] gap-6 pb-12 items-start transition-all">
         {/* Left Column: Habit List */}
         <section className="col-span-1">
           <HabitList />
