@@ -34,8 +34,8 @@ export function Sidebar() {
             <div className="flex-1 overflow-y-auto py-2 px-3">
                 <div className="space-y-1">
                     <NavItem icon={<LayoutDashboard className="w-4 h-4" />} label="Dashboard" href="/" active={pathname === "/"} />
-                    <NavItem icon={<CheckSquare className="w-4 h-4" />} label="Habit Tracker" active={pathname === "/"} href="/" />
-                    <NavItem icon={<Target className="w-4 h-4" />} label="Daily Goals" />
+                    <NavItem icon={<CheckSquare className="w-4 h-4" />} label="Habit Tracker" href="/habits" active={pathname === "/habits"} />
+                    <NavItem icon={<Target className="w-4 h-4" />} label="Daily Goals" href="/goals" active={pathname === "/goals"} />
                     <NavItem icon={<Wallet className="w-4 h-4" />} label="Finance Management" href="/finance" active={pathname === "/finance"} />
                 </div>
 

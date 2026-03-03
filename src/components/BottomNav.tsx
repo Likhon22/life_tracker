@@ -19,12 +19,14 @@ export function BottomNav() {
                 <BottomNavItem
                     icon={<CheckSquare className="w-5 h-5" />}
                     label="Habits"
-                    href="/"
-                    active={pathname === "/"}
+                    href="/habits"
+                    active={pathname === "/habits"}
                 />
                 <BottomNavItem
                     icon={<Target className="w-5 h-5" />}
                     label="Goals"
+                    href="/goals"
+                    active={pathname === "/goals"}
                 />
                 <BottomNavItem
                     icon={<Wallet className="w-5 h-5" />}

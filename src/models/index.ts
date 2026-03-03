@@ -138,3 +138,31 @@ const FinanceFixedCostSchema = new Schema({
 });
 FinanceFixedCostSchema.virtual('id').get(function (this: any) { return this._id.toHexString(); });
 export const FinanceFixedCost = mongoose.models.FinanceFixedCost || mongoose.model<IFinanceFixedCost>("FinanceFixedCost", FinanceFixedCostSchema);
+
+// --- Daily Goals / Todo Model ---
+
+export interface IDailyGoal {
+    userId: string;
+    text: string;
+    completed: boolean;
+    date: string; // YYYY-MM-DD
+    order: number;
+}
+
+const DailyGoalSchema = new Schema({
+    userId: { type: String, required: true, index: true },
+    text: { type: String, required: true },
+    completed: { type: Boolean, default: false },
+    date: { type: String, required: true, index: true },
+    order: { type: Number, default: 0 }
+}, {
+    timestamps: true,
+    toJSON: {
+        virtuals: true,
+        versionKey: false,
+        transform: (doc: any, ret: any) => { delete ret._id; }
+    }
+});
+
+DailyGoalSchema.virtual('id').get(function (this: any) { return this._id.toHexString(); });
+export const DailyGoal = mongoose.models.DailyGoal || mongoose.model<IDailyGoal>("DailyGoal", DailyGoalSchema);
