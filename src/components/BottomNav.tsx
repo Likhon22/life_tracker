@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, CheckSquare, Target, Wallet } from "lucide-react";
+import { LayoutDashboard, CheckSquare, Target, Wallet, FileCode } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function BottomNav() {
@@ -27,6 +27,12 @@ export function BottomNav() {
                     label="Goals"
                     href="/goals"
                     active={pathname === "/goals"}
+                />
+                <BottomNavItem
+                    icon={<FileCode className="w-5 h-5" />}
+                    label="Resume"
+                    href="/resumes"
+                    active={pathname === "/resumes"}
                 />
                 <BottomNavItem
                     icon={<Wallet className="w-5 h-5" />}

@@ -9,6 +9,7 @@ import { FinanceCharts } from "@/components/finance/FinanceCharts";
 import { MonthSelector } from "@/components/finance/MonthSelector";
 import { RecentExpenses } from "@/components/finance/RecentExpenses";
 import { Wallet } from "lucide-react";
+import { ModulePage } from "@/components/ModulePage";
 
 export default function FinancePage() {
     const { data: session, status } = useSession();
@@ -43,43 +44,34 @@ export default function FinancePage() {
 
     return (
         <FinanceProvider>
-            <div className="flex-1 flex flex-col h-full bg-[#111111] overflow-y-auto no-scrollbar">
-                {/* Header */}
-                <header className="flex-none px-4 md:px-8 pt-8 md:pt-12 pb-6 w-full max-w-[1600px] mx-auto">
-                    <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-                        <div className="flex flex-col gap-2">
-                            <h1 className="text-3xl md:text-4xl font-black text-white tracking-tighter">Finance Center</h1>
-                            <p className="text-[#888888] text-sm md:text-base font-medium">Efficiently manage your wealth and optimize spending habits.</p>
+            <ModulePage
+                title="Finance Center"
+                subtitle="Efficiently manage your wealth and optimize spending habits."
+                icon={Wallet}
+                authDescription="Sign in to track your monthly budget, daily expenses, and analyze your spending patterns securely."
+                headerContent={<MonthSelector />}
+            >
+                <div className="grid grid-cols-1 lg:grid-cols-[400px_1fr] gap-6 md:gap-8 items-start">
+                    {/* Left Column: Controls & Summary */}
+                    <div className="flex flex-col space-y-6 md:space-y-8">
+                        <div className="order-2 md:order-1">
+                            <BudgetSummary />
                         </div>
-                        <MonthSelector />
-                    </div>
-                </header>
-
-                {/* Main Content Grid */}
-                <main className="flex-1 px-4 md:px-8 pb-24 md:pb-12 w-full max-w-[1600px] mx-auto">
-                    <div className="grid grid-cols-1 lg:grid-cols-[400px_1fr] gap-6 md:gap-8 items-start">
-
-                        {/* Left Column: Controls & Summary */}
-                        <div className="flex flex-col space-y-6 md:space-y-8">
-                            <div className="order-2 md:order-1">
-                                <BudgetSummary />
-                            </div>
-                            <div className="order-1 md:order-2">
-                                <AddExpense />
-                            </div>
-                            <div className="order-3">
-                                <FixedCosts />
-                            </div>
+                        <div className="order-1 md:order-2">
+                            <AddExpense />
                         </div>
-
-                        {/* Right Column: Analytics & List */}
-                        <div className="space-y-6 md:space-y-8">
-                            <FinanceCharts />
-                            <RecentExpenses />
+                        <div className="order-3">
+                            <FixedCosts />
                         </div>
                     </div>
-                </main>
-            </div>
+
+                    {/* Right Column: Analytics & List */}
+                    <div className="space-y-6 md:space-y-8">
+                        <FinanceCharts />
+                        <RecentExpenses />
+                    </div>
+                </div>
+            </ModulePage>
         </FinanceProvider>
     );
 }

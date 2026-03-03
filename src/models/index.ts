@@ -166,3 +166,35 @@ const DailyGoalSchema = new Schema({
 
 DailyGoalSchema.virtual('id').get(function (this: any) { return this._id.toHexString(); });
 export const DailyGoal = mongoose.models.DailyGoal || mongoose.model<IDailyGoal>("DailyGoal", DailyGoalSchema);
+
+// --- AI Resume Architect Model ---
+
+export interface IResume {
+    userId: string;
+    name: string;
+    content: string; // LaTeX code or Raw Text
+    format: 'latex' | 'text';
+    actsAsBase: boolean; // If true, used in experience pooling
+    isMasterTemplate: boolean;
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+const ResumeSchema = new Schema({
+    userId: { type: String, required: false, index: true }, // Optional for master templates
+    name: { type: String, required: true },
+    content: { type: String, required: true },
+    format: { type: String, enum: ['latex', 'text'], default: 'latex' },
+    actsAsBase: { type: Boolean, default: true },
+    isMasterTemplate: { type: Boolean, default: false }
+}, {
+    timestamps: true,
+    toJSON: {
+        virtuals: true,
+        versionKey: false,
+        transform: (doc: any, ret: any) => { delete ret._id; }
+    }
+});
+
+ResumeSchema.virtual('id').get(function (this: any) { return this._id.toHexString(); });
+export const Resume = mongoose.models.Resume || mongoose.model<IResume>("Resume", ResumeSchema);

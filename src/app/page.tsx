@@ -7,7 +7,9 @@ import {
     Target,
     Wallet,
     ChevronRight,
-    TrendingUp
+    TrendingUp,
+    FileCode,
+    Sparkles
 } from "lucide-react";
 import { ModulePage } from "@/components/ModulePage";
 
@@ -21,7 +23,7 @@ export default function Dashboard() {
             icon={LayoutDashboard}
             authDescription="Your central command for habits, goals, and finances. Sign in to start your journey."
         >
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl">
                 {/* Habit Tracker Preview */}
                 <DashboardCard
                     title="Habit Tracker"
@@ -57,6 +59,22 @@ export default function Dashboard() {
                             <div className="w-1.5 h-1.5 rounded-full bg-[#2d2d2d]" />
                             <span className="truncate opacity-40">Ready for your next goal?</span>
                         </div>
+                    </div>
+                </DashboardCard>
+
+                {/* Resume Architect Preview */}
+                <DashboardCard
+                    title="Resume Architect"
+                    icon={<FileCode className="w-5 h-5 text-blue-400" />}
+                    href="/resumes"
+                    subtitle="Build your career mission"
+                >
+                    <div className="flex flex-col gap-2">
+                        <div className="flex items-center gap-2">
+                            <Sparkles className="w-3 h-3 text-blue-400" />
+                            <span className="text-[10px] font-bold text-blue-400 uppercase tracking-widest">Gemini AI Active</span>
+                        </div>
+                        <p className="text-xs text-[#ededed] mt-1">Pool your CV versions and architect high-impact LaTeX resumes.</p>
                     </div>
                 </DashboardCard>
 

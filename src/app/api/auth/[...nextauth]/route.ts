@@ -1,5 +1,7 @@
 import NextAuth, { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
+import { rateLimit } from "@/lib/rateLimit";
+import { NextResponse } from "next/server";
 
 export const authOptions: NextAuthOptions = {
     providers: [
@@ -31,4 +33,15 @@ export const authOptions: NextAuthOptions = {
 
 const handler = NextAuth(authOptions);
 
-export { handler as GET, handler as POST };
+async function rateLimitedHandler(request: Request, context: any) {
+    const ip = request.headers.get("x-forwarded-for") || "anonymous";
+    const limitResult = rateLimit(`auth_${ip}`, 20, 60 * 1000); // 20 attempts per minute
+
+    if (!limitResult.success) {
+        return new Response("Too many requests", { status: 429 });
+    }
+
+    return (handler as any)(request, context);
+}
+
+export { rateLimitedHandler as GET, rateLimitedHandler as POST };

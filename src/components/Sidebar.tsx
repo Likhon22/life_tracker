@@ -2,13 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-    Settings,
-    LayoutDashboard,
-    CheckSquare,
-    Wallet,
-    Target
-} from "lucide-react";
+import { LayoutDashboard, CheckSquare, Wallet, Target, Settings, FileCode } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 import { useSession, signIn, signOut } from "next-auth/react";
@@ -36,6 +30,7 @@ export function Sidebar() {
                     <NavItem icon={<LayoutDashboard className="w-4 h-4" />} label="Dashboard" href="/" active={pathname === "/"} />
                     <NavItem icon={<CheckSquare className="w-4 h-4" />} label="Habit Tracker" href="/habits" active={pathname === "/habits"} />
                     <NavItem icon={<Target className="w-4 h-4" />} label="Daily Goals" href="/goals" active={pathname === "/goals"} />
+                    <NavItem icon={<FileCode className="w-4 h-4" />} label="Resume Architect" href="/resumes" active={pathname === "/resumes"} />
                     <NavItem icon={<Wallet className="w-4 h-4" />} label="Finance Management" href="/finance" active={pathname === "/finance"} />
                 </div>
 

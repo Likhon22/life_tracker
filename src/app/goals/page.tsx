@@ -12,9 +12,8 @@ export default function GoalsPage() {
             subtitle="Define your daily execution and one-off targets."
             icon={Target}
             authDescription="Sign in to plan your daily missions and track your specific targets for each day."
-            maxWidth="max-w-[1200px]"
         >
-            <div className="w-full max-w-2xl mx-auto">
+            <div className="w-full">
                 <DailyGoals />
             </div>
         </ModulePage>

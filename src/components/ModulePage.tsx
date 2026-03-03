@@ -23,7 +23,7 @@ export function ModulePage({
     icon,
     authDescription,
     children,
-    maxWidth = "max-w-[1400px]",
+    maxWidth = "max-w-[1600px]",
     className,
     headerContent,
     noHeader = false
