@@ -10,7 +10,8 @@ import {
     YAxis,
     CartesianGrid,
     Tooltip,
-    ResponsiveContainer
+    ResponsiveContainer,
+    LabelList
 } from "recharts";
 
 
@@ -126,7 +127,16 @@ export function PerformanceChart() {
                             dot={{ r: 4, fill: "#191919", stroke: "#3b82f6", strokeWidth: 2 }}
                             activeDot={{ r: 6, fill: "#3b82f6", stroke: "#111111", strokeWidth: 2 }}
                             connectNulls={false}
-                        />
+                        >
+                            <LabelList
+                                dataKey="rate"
+                                position="top"
+                                offset={10}
+                                fill="#888888"
+                                fontSize={10}
+                                formatter={(value: number) => value !== null ? `${value}%` : ""}
+                            />
+                        </Line>
                     </LineChart>
                 </ResponsiveContainer>
             </div>
