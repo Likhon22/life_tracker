@@ -35,7 +35,7 @@ export function DailyGoals({ selectedDate }: DailyGoalsProps) {
     const fetchGoals = async () => {
         try {
             setIsLoading(true);
-            const res = await fetch(`/api/goals?date=${activeDate}`);
+            const res = await fetch(`/api/goals?date=${activeDate}&localToday=${todayStr}`);
             if (res.ok) {
                 const data = await res.json();
                 setGoals(data);

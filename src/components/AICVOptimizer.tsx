@@ -1,269 +1,276 @@
 "use client";
 
 import { useState } from "react";
-import { Zap, Target, Loader2, ClipboardCheck, AlertCircle, Sparkles, Save, FileText } from "lucide-react";
+import {
+    Zap, Target, Loader2, CheckCircle2, XCircle, Lightbulb,
+    Star, BookOpen, Vault, Copy, FileCode, Check, Layers,
+    ArrowRightLeft, Wrench, RefreshCw
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "react-hot-toast";
 
 interface AICVOptimizerProps {
-    onResumeSaved?: () => void;
-    currentSavedSize?: number;
+    hasVaultItems?: boolean;
 }
 
-export function AICVOptimizer({ onResumeSaved, currentSavedSize = 0 }: AICVOptimizerProps) {
+export function AICVOptimizer({ hasVaultItems = false }: AICVOptimizerProps) {
     const [jobDescription, setJobDescription] = useState("");
     const [tempContent, setTempContent] = useState("");
-    const [isOptimizing, setIsOptimizing] = useState(false);
-    const [isSaving, setIsSaving] = useState(false);
+    const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [result, setResult] = useState<any>(null);
+    const [isGenerating, setIsGenerating] = useState(false);
+    const [generatedLatex, setGeneratedLatex] = useState<string | null>(null);
+    const [copied, setCopied] = useState(false);
 
-    const handleOptimize = async () => {
-        if (!jobDescription.trim()) {
-            toast.error("Please provide a job description");
-            return;
-        }
-
+    const handleAnalyze = async () => {
+        if (!jobDescription.trim()) { toast.error("Please provide a job description"); return; }
         try {
-            setIsOptimizing(true);
+            setIsAnalyzing(true);
+            setResult(null);
+            setGeneratedLatex(null);
             const res = await fetch("/api/resumes/optimize", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ jobDescription, tempContent })
             });
-
-            if (!res.ok) throw new Error(await res.text());
-
             const data = await res.json();
+            if (!res.ok) {
+                toast.error(data.error === "VAULT_EMPTY" ? "Save at least one CV to your Vault first!" : data.error || "Analysis failed");
+                return;
+            }
             setResult(data);
-            toast.success("Mission Accomplished! Resume optimized.");
-        } catch (error: any) {
-            console.error(error);
-            toast.error(error.message || "AI Mission Failed");
+            toast.success("Blueprint ready!");
+        } catch {
+            toast.error("AI Analysis Failed");
         } finally {
-            setIsOptimizing(false);
+            setIsAnalyzing(false);
         }
     };
 
-    const handleSaveToVault = async () => {
-        if (!result?.optimizedLatex) return;
-
+    const handleGenerate = async () => {
+        if (!result) return;
         try {
-            setIsSaving(true);
-            const res = await fetch("/api/resumes", {
+            setIsGenerating(true);
+            setGeneratedLatex(null);
+            const res = await fetch("/api/resumes/generate", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    name: `Optimized CV - ${new Date().toLocaleDateString()}`,
-                    content: result.optimizedLatex,
-                    format: 'latex'
+                    jobDescription,
+                    projectSlots: result.projectSlots,
+                    experienceSwaps: result.experienceSwaps,
+                    skillConsolidation: result.skillConsolidation,
                 })
             });
-
-            if (!res.ok) throw new Error(await res.text());
-
-            toast.success("Saved to your resumes!");
-            if (onResumeSaved) onResumeSaved();
-        } catch (error: any) {
-            const err = JSON.parse(error.message);
-            toast.error(err.error || "Failed to save CV");
+            const data = await res.json();
+            if (!res.ok) {
+                if (data.error === "INCOMPLETE_LATEX") toast.error(data.details, { duration: 6000 });
+                else toast.error(data.error || "Generation failed");
+                return;
+            }
+            setGeneratedLatex(data.optimizedLatex);
+            toast.success("LaTeX generated! Paste into Overleaf.");
+        } catch {
+            toast.error("Generation failed");
         } finally {
-            setIsSaving(false);
+            setIsGenerating(false);
         }
     };
 
-    const copyToClipboard = () => {
-        if (result?.optimizedLatex) {
-            navigator.clipboard.writeText(result.optimizedLatex);
-            toast.success("LaTeX code copied!");
-        }
+    const copyLatex = () => {
+        if (!generatedLatex) return;
+        navigator.clipboard.writeText(generatedLatex);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+        toast.success("LaTeX copied!");
     };
+
+    const actionColor = (a: string) =>
+        a === "KEEP" ? "text-emerald-400" : a === "TWEAK" ? "text-yellow-400" : "text-orange-400";
+    const actionIcon = (a: string) =>
+        a === "KEEP" ? <CheckCircle2 className="w-3 h-3 shrink-0" /> :
+            a === "TWEAK" ? <Wrench className="w-3 h-3 shrink-0" /> :
+                <ArrowRightLeft className="w-3 h-3 shrink-0" />;
+
+    if (!hasVaultItems) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[400px] p-10 border-2 border-dashed border-white/10 rounded-3xl text-center gap-4">
+                <Vault className="w-16 h-16 text-[#333]" />
+                <h3 className="text-xl font-bold text-white">Your Vault is Empty</h3>
+                <p className="text-sm text-[#666] max-w-sm">
+                    Save at least one CV to the <strong className="text-white">Experience Vault</strong> first. The AI will analyze your vault to match against the job description.
+                </p>
+                <p className="text-[10px] font-bold text-blue-500 uppercase tracking-widest">Go to → Saved Resumes → Add New Version</p>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6">
-            {/* Glassmorphism Loading Overlay */}
-            {isOptimizing && (
-                <div className="fixed inset-0 top-0 left-0 w-full h-full min-h-screen z-[9999] flex flex-col items-center justify-center bg-black/60 backdrop-blur-xl animate-in fade-in duration-500">
+            {/* Loading Overlays */}
+            {(isAnalyzing || isGenerating) && (
+                <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-black/60 backdrop-blur-xl animate-in fade-in duration-500">
                     <div className="relative">
-                        {/* Orbiting rings */}
                         <div className="absolute inset-0 w-32 h-32 border-4 border-blue-500/20 rounded-full animate-[ping_3s_linear_infinite]" />
-                        <div className="w-32 h-32 border-t-4 border-blue-500 rounded-full animate-spin shadow-lg shadow-blue-500/20" />
+                        <div className="w-32 h-32 border-t-4 border-blue-500 rounded-full animate-spin" />
                         <div className="absolute inset-0 flex items-center justify-center">
                             <Zap className="w-8 h-8 text-blue-500 fill-blue-500/20 animate-pulse" />
                         </div>
                     </div>
-                    <div className="mt-8 text-center space-y-2">
-                        <h2 className="text-2xl font-black text-white tracking-tight uppercase italic">Architecting...</h2>
-                        <div className="flex items-center gap-2 justify-center text-[10px] font-bold text-blue-500 uppercase tracking-widest">
-                            <span className="w-1 h-1 bg-blue-500 rounded-full animate-pulse" />
-                            Pooling Experience
-                            <span className="w-1 h-1 bg-blue-500 rounded-full animate-pulse delay-75" />
-                            Optimizing ATS
-                            <span className="w-1 h-1 bg-blue-500 rounded-full animate-pulse delay-150" />
-                            Finalizing LaTeX
-                        </div>
-                        <p className="text-xs text-[#555555] font-medium max-w-[200px] mx-auto mt-4 px-4 py-2 bg-white/5 border border-white/5 rounded-xl">
-                            Gemini is currently cross-referencing your pool with the target mission description.
+                    <div className="mt-8 text-center">
+                        <h2 className="text-2xl font-black text-white uppercase">{isAnalyzing ? "Analyzing Pool..." : "Generating CV..."}</h2>
+                        <p className="text-[10px] font-bold text-blue-500 uppercase tracking-widest mt-1">
+                            {isAnalyzing ? "Curating projects · Matching bullets · Mapping skills" : "Applying blueprint · Preserving structure"}
                         </p>
                     </div>
                 </div>
             )}
 
-            <div className="space-y-6">
-                <div className="bg-[#191919] border border-[#2d2d2d] rounded-3xl p-6 shadow-xl relative overflow-hidden group">
-                    <div className="flex items-center gap-4 mb-6">
-                        <div className="p-3 bg-blue-500/10 rounded-2xl">
-                            <Target className="w-6 h-6 text-blue-500" />
-                        </div>
-                        <div>
-                            <h2 className="font-bold text-xl text-white tracking-tight">Mission Objective</h2>
-                            <p className="text-[10px] font-bold text-[#555555] uppercase tracking-widest mt-0.5">Paste target job description</p>
-                        </div>
-                    </div>
-
-                    <textarea
-                        value={jobDescription}
-                        onChange={(e) => setJobDescription(e.target.value)}
-                        placeholder="Paste the Job Description here. The AI will analyze your saved resumes to build the perfect match..."
-                        className="w-full h-48 bg-[#111111] border border-white/5 rounded-2xl p-5 text-sm text-[#ededed] outline-none focus:border-blue-500/50 transition-all font-medium resize-none shadow-inner mb-6"
-                    />
-
-                    <div className="flex items-center gap-4 mb-4 mt-2">
-                        <div className="p-2 bg-orange-500/10 rounded-xl">
-                            <FileText className="w-5 h-5 text-orange-500" />
-                        </div>
-                        <div>
-                            <h2 className="font-bold text-sm text-white tracking-tight">Temporary Experience Dump (Optional)</h2>
-                            <p className="text-[9px] font-bold text-[#555555] uppercase tracking-widest mt-0.5">Not saved to db. Used only for this generation.</p>
-                        </div>
-                    </div>
-
-                    <textarea
-                        value={tempContent}
-                        onChange={(e) => setTempContent(e.target.value)}
-                        placeholder="Provide raw text of your skills, projects, or existing text CV here..."
-                        className="w-full h-32 bg-[#111111] border border-white/5 rounded-2xl p-5 text-sm text-[#ededed] outline-none focus:border-orange-500/50 transition-all font-medium resize-none shadow-inner"
-                    />
-
-                    <div className="mt-8 flex items-center justify-between">
-                        <div className="flex items-center gap-2 text-[10px] font-bold text-[#444444] uppercase tracking-widest">
-                            <Sparkles className="w-3 h-3" />
-                            <span>Experience Pooling Active</span>
-                        </div>
-
-                        <button
-                            onClick={handleOptimize}
-                            disabled={isOptimizing}
-                            className="bg-blue-600 hover:bg-blue-500 disabled:bg-blue-600/50 text-white px-8 py-3 rounded-2xl font-bold transition-all active:scale-95 cursor-pointer shadow-lg shadow-blue-600/20 flex items-center gap-3"
-                        >
-                            {isOptimizing ? (
-                                <>
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                    <span>Architecting...</span>
-                                </>
-                            ) : (
-                                <>
-                                    <Zap className="w-4 h-4 fill-white" />
-                                    <span>Generate Optimized CV</span>
-                                </>
-                            )}
-                        </button>
-                    </div>
+            {/* Inputs */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div className="bg-[#191919] border border-[#2d2d2d] rounded-3xl p-6 flex flex-col gap-3">
+                    <label className="text-[10px] font-bold text-[#555] uppercase tracking-widest flex items-center gap-2"><Target className="w-3 h-3" /> Job Description</label>
+                    <textarea value={jobDescription} onChange={e => setJobDescription(e.target.value)} placeholder="Paste the target job description here..." className="flex-1 bg-[#111] border border-white/5 rounded-2xl p-4 text-sm text-white outline-none focus:border-blue-500/50 transition-all resize-none font-medium min-h-[200px]" />
                 </div>
+                <div className="bg-[#191919] border border-[#2d2d2d] rounded-3xl p-6 flex flex-col gap-3">
+                    <label className="text-[10px] font-bold text-[#555] uppercase tracking-widest flex items-center gap-2"><BookOpen className="w-3 h-3" /> Extra Experience (Optional)</label>
+                    <textarea value={tempContent} onChange={e => setTempContent(e.target.value)} placeholder="Any extra skills or projects not in your saved CVs..." className="flex-1 bg-[#111] border border-white/5 rounded-2xl p-4 text-sm text-[#aaa] outline-none focus:border-blue-500/50 transition-all resize-none font-medium min-h-[200px]" />
+                    <p className="text-[10px] text-[#444]">Not saved to DB. Only used for this analysis.</p>
+                </div>
+            </div>
 
-                {/* AI Results Board */}
-                {result && (
-                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                        {/* Score & Analysis Section */}
-                        <div className="lg:col-span-4 space-y-6">
-                            <div className="bg-[#191919] border border-[#2d2d2d] rounded-3xl p-6 shadow-xl flex flex-col items-center">
-                                <div className="relative w-24 h-24 mb-4">
-                                    <svg className="w-full h-full transform -rotate-90">
-                                        <circle cx="48" cy="48" r="42" stroke="currentColor" strokeWidth="6" fill="transparent" className="text-white/5" />
-                                        <circle
-                                            cx="48"
-                                            cy="48"
-                                            r="42"
-                                            stroke="currentColor"
-                                            strokeWidth="6"
-                                            fill="transparent"
-                                            strokeDasharray={2 * Math.PI * 42}
-                                            strokeDashoffset={2 * Math.PI * 42 * (1 - result.fitPercentage / 100)}
-                                            strokeLinecap="round"
-                                            className="text-blue-500 transition-all duration-1000 ease-out"
-                                        />
-                                    </svg>
-                                    <div className="absolute inset-0 flex flex-col items-center justify-center">
-                                        <span className="text-xl font-black text-white">{result.fitPercentage}%</span>
-                                        <span className="text-[8px] font-bold text-[#555555] uppercase tracking-tighter">Match</span>
-                                    </div>
-                                </div>
+            <button onClick={handleAnalyze} disabled={isAnalyzing || !jobDescription.trim()} className="w-full flex items-center justify-center gap-3 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed text-white py-4 rounded-2xl font-bold transition-all cursor-pointer shadow-lg shadow-blue-600/20">
+                <Zap className="w-5 h-5" /> Analyze & Build Blueprint
+            </button>
 
-                                <div className={cn(
-                                    "px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border mb-4",
-                                    result.recommendation === "Strong Apply" ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" :
-                                        result.recommendation === "Apply with Caution" ? "bg-orange-500/10 text-orange-500 border-orange-500/20" :
-                                            "bg-red-500/10 text-red-500 border-red-500/20"
-                                )}>
-                                    {result.recommendation}
-                                </div>
+            {/* Results */}
+            {result && (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-4">
 
-                                <div className="w-full space-y-3">
-                                    {Array.isArray(result.analysis) ? (
-                                        result.analysis.map((point: string, idx: number) => (
-                                            <div key={idx} className="flex items-start gap-3 p-3 bg-white/5 border border-white/5 rounded-2xl">
-                                                <AlertCircle className="w-3 h-3 text-blue-500 shrink-0 mt-0.5" />
-                                                <p className="text-[10px] text-[#888888] font-medium leading-relaxed">
-                                                    {point}
-                                                </p>
-                                            </div>
-                                        ))
-                                    ) : (
-                                        <p className="text-[10px] text-[#888888] leading-relaxed p-3 bg-white/5 border border-white/5 rounded-2xl">
-                                            {result.analysis}
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
+                    {/* Score + Summary */}
+                    <div className="grid grid-cols-1 lg:grid-cols-[160px_1fr] gap-4">
+                        <div className={cn("flex flex-col items-center justify-center rounded-2xl border p-5 gap-1",
+                            result.fitPercentage >= 80 ? "text-emerald-400 border-emerald-400/20 bg-emerald-400/5" :
+                                result.fitPercentage >= 60 ? "text-yellow-400 border-yellow-400/20 bg-yellow-400/5" :
+                                    "text-red-400 border-red-400/20 bg-red-400/5"
+                        )}>
+                            <span className="text-5xl font-black">{result.fitPercentage}%</span>
+                            <span className="text-[9px] font-bold uppercase tracking-widest">Pool Match</span>
                         </div>
-
-                        {/* Code Editor Section */}
-                        <div className="lg:col-span-8 bg-[#191919] border border-[#2d2d2d] rounded-3xl p-6 shadow-xl flex flex-col h-[600px]">
-                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
-                                <div className="flex items-center gap-3">
-                                    <ClipboardCheck className="w-5 h-5 text-emerald-500" />
-                                    <div>
-                                        <h3 className="font-bold text-white tracking-tight text-lg">Optimized LaTeX Code</h3>
-                                        <p className="text-[10px] font-bold text-[#555555] uppercase tracking-wider">Strictly formatted for ATS</p>
-                                    </div>
+                        <div className="bg-[#191919] border border-[#2d2d2d] rounded-2xl p-5 flex flex-col gap-3">
+                            <p className="text-sm text-[#ccc] leading-relaxed">{result.summary}</p>
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <p className="text-[9px] font-bold text-emerald-500 uppercase tracking-widest mb-1.5">Strengths</p>
+                                    {result.strengths?.map((s: string, i: number) => <p key={i} className="text-xs text-[#aaa] leading-relaxed mb-1 flex gap-1.5"><span className="text-emerald-500 mt-0.5">✓</span>{s}</p>)}
                                 </div>
-                                <div className="flex items-center gap-2 w-full sm:w-auto">
-                                    <button
-                                        onClick={copyToClipboard}
-                                        className="flex-1 sm:flex-none flex justify-center items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 text-[#ededed] rounded-xl text-xs font-bold transition-all border border-white/5 cursor-pointer"
-                                    >
-                                        <ClipboardCheck className="w-4 h-4" />
-                                        <span>Copy</span>
-                                    </button>
-                                    <button
-                                        onClick={handleSaveToVault}
-                                        disabled={isSaving || currentSavedSize >= 4}
-                                        className="flex-1 sm:flex-none flex justify-center items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:bg-blue-600/50 text-white rounded-xl text-xs font-bold transition-all cursor-pointer"
-                                    >
-                                        {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                                        <span>{currentSavedSize >= 4 ? "Limit Reached (4/4)" : "Save Result"}</span>
-                                    </button>
+                                <div>
+                                    <p className="text-[9px] font-bold text-red-400 uppercase tracking-widest mb-1.5">Gaps</p>
+                                    {result.gaps?.map((g: string, i: number) => <p key={i} className="text-xs text-[#aaa] leading-relaxed mb-1 flex gap-1.5"><span className="text-red-400 mt-0.5">✗</span>{g}</p>)}
                                 </div>
-                            </div>
-
-                            <div className="flex-1 bg-[#111111] rounded-2xl p-6 overflow-auto border border-white/5 shadow-inner">
-                                <pre className="text-[11px] font-mono text-blue-400/80 leading-relaxed no-scrollbar whitespace-pre-wrap">
-                                    {result.optimizedLatex}
-                                </pre>
                             </div>
                         </div>
                     </div>
-                )}
-            </div>
+
+                    {/* Project Slots */}
+                    {result.projectSlots?.length > 0 && (
+                        <div className="bg-[#191919] border border-[#2d2d2d] rounded-2xl p-6 space-y-3">
+                            <div className="flex items-center gap-2 mb-1">
+                                <Layers className="w-4 h-4 text-purple-400" />
+                                <h4 className="text-[10px] font-bold text-purple-400 uppercase tracking-widest">Project Slot Curation</h4>
+                                <span className="text-[9px] text-[#444] ml-auto">{result.projectSlots.length} slots in Priority CV</span>
+                            </div>
+                            <div className="space-y-2">
+                                {result.projectSlots.map((slot: any, i: number) => (
+                                    <div key={i} className={cn("flex items-start gap-3 p-3 rounded-xl border",
+                                        slot.action === 'KEEP' ? "border-emerald-500/10 bg-emerald-500/5" : "border-orange-400/10 bg-orange-400/5"
+                                    )}>
+                                        <span className={cn("text-[9px] font-black px-1.5 py-0.5 rounded mt-0.5 shrink-0",
+                                            slot.action === 'KEEP' ? "bg-emerald-500/10 text-emerald-400" : "bg-orange-400/10 text-orange-400"
+                                        )}>{slot.action}</span>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-sm font-semibold text-white">
+                                                {slot.action === 'KEEP' ? slot.currentProject : <><span className="line-through text-[#555]">{slot.currentProject}</span> → <span className="text-orange-400">{slot.recommendedProject}</span></>}
+                                                {slot.sourceCv && <span className="text-[9px] text-[#555] ml-2 font-normal">from {slot.sourceCv}</span>}
+                                            </p>
+                                            <p className="text-xs text-[#888] mt-0.5">{slot.reason}</p>
+                                            {slot.textTweaks && <p className="text-xs text-yellow-400/80 mt-1 flex items-center gap-1"><Wrench className="w-3 h-3" /> {slot.textTweaks}</p>}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Experience Swaps */}
+                    {result.experienceSwaps?.length > 0 && (
+                        <div className="bg-[#191919] border border-[#2d2d2d] rounded-2xl p-6 space-y-4">
+                            <div className="flex items-center gap-2">
+                                <ArrowRightLeft className="w-4 h-4 text-blue-400" />
+                                <h4 className="text-[10px] font-bold text-blue-400 uppercase tracking-widest">Experience Bullet Blueprint</h4>
+                            </div>
+                            {result.experienceSwaps.map((exp: any, i: number) => (
+                                <div key={i} className="space-y-2">
+                                    <p className="text-xs font-bold text-white uppercase tracking-wider border-b border-white/5 pb-1">{exp.role}</p>
+                                    {exp.bullets?.map((b: any, j: number) => (
+                                        <div key={j} className="flex items-start gap-2 pl-2">
+                                            <span className={cn("mt-0.5", actionColor(b.action))}>{actionIcon(b.action)}</span>
+                                            <div>
+                                                <span className={cn("text-[9px] font-bold uppercase mr-2", actionColor(b.action))}>{b.action}</span>
+                                                {b.action === 'KEEP'
+                                                    ? <span className="text-xs text-[#666]">"{b.originalPreview}..."</span>
+                                                    : <span className="text-xs text-[#ccc]">{b.newContent}</span>}
+                                                {b.sourceCv && <span className="text-[9px] text-[#444] ml-1">— from {b.sourceCv}</span>}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* Skill Consolidation */}
+                    {result.skillConsolidation?.length > 0 && (
+                        <div className="bg-[#191919] border border-[#2d2d2d] rounded-2xl p-6 space-y-3">
+                            <div className="flex items-center gap-2">
+                                <Star className="w-4 h-4 text-yellow-400" />
+                                <h4 className="text-[10px] font-bold text-yellow-400 uppercase tracking-widest">Curated Skill Set (From All CVs)</h4>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                {result.skillConsolidation.map((cat: any, i: number) => (
+                                    <div key={i} className="bg-white/[0.02] border border-white/5 rounded-xl p-3">
+                                        <p className="text-[9px] font-bold text-[#555] uppercase tracking-widest mb-1.5">{cat.category}</p>
+                                        <p className="text-xs text-[#ccc] flex flex-wrap gap-1">
+                                            {cat.skills?.map((s: string, j: number) => (
+                                                <span key={j} className="bg-white/5 border border-white/5 rounded-md px-1.5 py-0.5">{s}</span>
+                                            ))}
+                                        </p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Generate Button */}
+                    <button onClick={handleGenerate} disabled={isGenerating} className="w-full flex items-center justify-center gap-3 bg-[#191919] hover:bg-[#222] border border-blue-500/30 hover:border-blue-500/60 disabled:opacity-40 disabled:cursor-not-allowed text-white py-4 rounded-2xl font-bold transition-all cursor-pointer">
+                        {isGenerating ? <><Loader2 className="w-5 h-5 animate-spin" /> Generating LaTeX...</> : <><FileCode className="w-5 h-5 text-blue-400" /> Generate Combined CV (LaTeX)</>}
+                    </button>
+
+                    {/* LaTeX Output */}
+                    {generatedLatex && (
+                        <div className="bg-[#111] border border-white/10 rounded-2xl overflow-hidden animate-in fade-in duration-300">
+                            <div className="flex items-center justify-between px-5 py-3 border-b border-white/5 bg-[#191919]">
+                                <span className="text-[10px] font-bold text-[#555] uppercase tracking-widest flex items-center gap-2"><FileCode className="w-3 h-3" /> Generated LaTeX — Paste into Overleaf</span>
+                                <button onClick={copyLatex} className="flex items-center gap-1.5 text-[10px] font-bold text-blue-400 hover:text-blue-300 cursor-pointer transition-colors">
+                                    {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                                    {copied ? "Copied!" : "Copy All"}
+                                </button>
+                            </div>
+                            <pre className="p-5 text-xs text-[#aaa] font-mono overflow-x-auto max-h-[500px] overflow-y-auto whitespace-pre-wrap leading-relaxed no-scrollbar">{generatedLatex}</pre>
+                        </div>
+                    )}
+                </div>
+            )}
         </div>
     );
 }

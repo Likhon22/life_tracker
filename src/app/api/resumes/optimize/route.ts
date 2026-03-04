@@ -3,7 +3,7 @@ import connectToDatabase from "@/lib/mongodb";
 import { Resume } from "@/models";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { optimizeResume } from "@/lib/gemini";
+import { analyzeResume } from "@/lib/gemini/analysis";
 import { rateLimit } from "@/lib/rateLimit";
 
 export async function POST(request: Request) {
@@ -36,35 +36,31 @@ export async function POST(request: Request) {
 
         await connectToDatabase();
 
-        // 1. Fetch user's "Experience Pool" (custom resumes marked as base)
+        // 1. Fetch all user's saved CVs (the Experience Pool)
         const userPool = await Resume.find({
             userId: session.user.id,
-            actsAsBase: true,
             isMasterTemplate: false
         });
 
-        // 2. Find the Structural Anchor (Priority CV)
-        const anchor = await Resume.findOne({
-            userId: session.user.id,
-            isAnchor: true
-        });
+        // 2. Require at least 1 saved CV
+        if (userPool.length === 0) {
+            return NextResponse.json({ error: "VAULT_EMPTY" }, { status: 400 });
+        }
 
-        // 3. Fetch Master Templates for structural fallback
-        const masterTemplates = await Resume.find({ isMasterTemplate: true });
+        // 3. Find the Priority CV (Anchor), fallback to first
+        const anchor = userPool.find(r => r.isAnchor) || userPool[0];
 
-        // 4. AI Orchestration
-        const result = await optimizeResume(
-            userPool.map(r => ({ content: r.content, format: r.format })),
+        // 4. AI Analysis
+        const result = await analyzeResume({
+            userResumes: userPool.map(r => ({ content: r.content, format: r.format, name: r.name })),
             jobDescription,
-            masterTemplates.map(t => ({ name: t.name, content: t.content })),
-            anchor ? { content: anchor.content, format: anchor.format } : undefined,
+            anchorResume: { content: anchor.content, format: anchor.format, name: anchor.name },
             tempContent,
-            { name: session.user.name || '', email: session.user.email || '' }
-        );
+        });
 
         return NextResponse.json(result);
     } catch (error: any) {
-        console.error("AI Optimization failed:", error);
+        console.error("AI Analysis failed:", error);
         return NextResponse.json(
             { error: error.message || "Failed to process mission" },
             { status: 500 }

@@ -13,16 +13,29 @@ export async function GET(request: Request) {
 
         const { searchParams } = new URL(request.url);
         const date = searchParams.get("date");
+        const localToday = searchParams.get("localToday");
 
         if (!date) {
             return NextResponse.json({ error: "Date is required" }, { status: 400 });
         }
 
         await connectToDatabase();
+
+        // Perform rollover sweep if user is viewing their actual 'today'
+        if (localToday && date === localToday) {
+            await DailyGoal.updateMany({
+                userId: session.user.id,
+                completed: false,
+                date: { $lt: localToday }
+            }, {
+                $set: { date: localToday }
+            });
+        }
+
         const goals = await DailyGoal.find({
             userId: session.user.id,
             date
-        }).sort({ order: 1, createdAt: 1 });
+        }).sort({ completed: 1, order: 1, createdAt: 1 });
 
         return NextResponse.json(goals);
     } catch (error) {

@@ -172,7 +172,7 @@ export default function ResumeArchitectPage() {
         >
             <div className="pb-12">
                 {activeTab === 'generator' ? (
-                    <AICVOptimizer onResumeSaved={fetchResumes} currentSavedSize={resumes.filter(r => !r.isMasterTemplate).length} />
+                    <AICVOptimizer hasVaultItems={resumes.filter(r => !r.isMasterTemplate).length > 0} />
                 ) : (
                     <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
                         {/* Priority Explanation Banner */}
