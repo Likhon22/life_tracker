@@ -383,7 +383,7 @@ export function HabitList() {
             {!showHistoryMobile && dateRange.length > 1 && (
                 <button
                     onClick={() => setShowHistoryMobile(true)}
-                    className="md:hidden w-full py-3 px-4 rounded-xl border border-white/5 bg-white/5 text-[#888888] font-medium text-sm flex items-center justify-center gap-2 hover:bg-white/10 transition-all active:scale-[0.98]"
+                    className="md:hidden w-full py-3 px-4 rounded-xl border border-white/5 bg-white/5 text-[#888888] font-medium text-sm flex items-center justify-center gap-2 hover:bg-white/10 transition-all active:scale-[0.98] cursor-pointer"
                 >
                     Show Monthly History
                 </button>

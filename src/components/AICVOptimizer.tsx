@@ -172,65 +172,62 @@ export function AICVOptimizer({ onResumeSaved, currentSavedSize = 0 }: AICVOptim
 
                 {/* AI Results Board */}
                 {result && (
-                    <div className="grid grid-cols-1 lg:grid-cols-[380px_1fr] gap-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                        <div className="bg-[#191919] border border-[#2d2d2d] rounded-3xl p-8 shadow-xl flex flex-col justify-center">
-                            <div className="flex flex-col items-center text-center">
-                                <div className="relative w-32 h-32 mb-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        {/* Score & Analysis Section */}
+                        <div className="lg:col-span-4 space-y-6">
+                            <div className="bg-[#191919] border border-[#2d2d2d] rounded-3xl p-6 shadow-xl flex flex-col items-center">
+                                <div className="relative w-24 h-24 mb-4">
                                     <svg className="w-full h-full transform -rotate-90">
-                                        <circle cx="64" cy="64" r="58" stroke="currentColor" strokeWidth="8" fill="transparent" className="text-white/5" />
+                                        <circle cx="48" cy="48" r="42" stroke="currentColor" strokeWidth="6" fill="transparent" className="text-white/5" />
                                         <circle
-                                            cx="64"
-                                            cy="64"
-                                            r="58"
+                                            cx="48"
+                                            cy="48"
+                                            r="42"
                                             stroke="currentColor"
-                                            strokeWidth="8"
+                                            strokeWidth="6"
                                             fill="transparent"
-                                            strokeDasharray={2 * Math.PI * 58}
-                                            strokeDashoffset={2 * Math.PI * 58 * (1 - result.fitPercentage / 100)}
+                                            strokeDasharray={2 * Math.PI * 42}
+                                            strokeDashoffset={2 * Math.PI * 42 * (1 - result.fitPercentage / 100)}
                                             strokeLinecap="round"
                                             className="text-blue-500 transition-all duration-1000 ease-out"
                                         />
                                     </svg>
                                     <div className="absolute inset-0 flex flex-col items-center justify-center">
-                                        <span className="text-3xl font-black text-white">{result.fitPercentage}%</span>
-                                        <span className="text-[10px] font-bold text-[#555555] uppercase tracking-tighter">Match</span>
+                                        <span className="text-xl font-black text-white">{result.fitPercentage}%</span>
+                                        <span className="text-[8px] font-bold text-[#555555] uppercase tracking-tighter">Match</span>
                                     </div>
                                 </div>
 
                                 <div className={cn(
-                                    "px-6 py-2 rounded-full text-xs font-black uppercase tracking-widest mb-6 border",
+                                    "px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border mb-4",
                                     result.recommendation === "Strong Apply" ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" :
                                         result.recommendation === "Apply with Caution" ? "bg-orange-500/10 text-orange-500 border-orange-500/20" :
                                             "bg-red-500/10 text-red-500 border-red-500/20"
                                 )}>
-                                    Status: {result.recommendation}
+                                    {result.recommendation}
                                 </div>
 
-                                <div className="space-y-4 text-left w-full">
+                                <div className="w-full space-y-3">
                                     {Array.isArray(result.analysis) ? (
                                         result.analysis.map((point: string, idx: number) => (
-                                            <div key={idx} className="flex items-start gap-4 p-3 bg-white/5 border border-white/5 rounded-2xl">
-                                                <div className="p-1.5 bg-[#252525] rounded-lg mt-0.5">
-                                                    <AlertCircle className="w-3 h-3 text-blue-500" />
-                                                </div>
-                                                <p className="text-[11px] text-[#888888] font-medium leading-relaxed">
+                                            <div key={idx} className="flex items-start gap-3 p-3 bg-white/5 border border-white/5 rounded-2xl">
+                                                <AlertCircle className="w-3 h-3 text-blue-500 shrink-0 mt-0.5" />
+                                                <p className="text-[10px] text-[#888888] font-medium leading-relaxed">
                                                     {point}
                                                 </p>
                                             </div>
                                         ))
                                     ) : (
-                                        <div className="flex items-start gap-3">
-                                            <AlertCircle className="w-4 h-4 text-[#555555] shrink-0 mt-0.5" />
-                                            <p className="text-xs text-[#888888] leading-relaxed">
-                                                {result.analysis}
-                                            </p>
-                                        </div>
+                                        <p className="text-[10px] text-[#888888] leading-relaxed p-3 bg-white/5 border border-white/5 rounded-2xl">
+                                            {result.analysis}
+                                        </p>
                                     )}
                                 </div>
                             </div>
                         </div>
 
-                        <div className="lg:col-span-1 bg-[#191919] border border-[#2d2d2d] rounded-3xl p-8 shadow-xl flex flex-col min-h-[600px]">
+                        {/* Code Editor Section */}
+                        <div className="lg:col-span-8 bg-[#191919] border border-[#2d2d2d] rounded-3xl p-6 shadow-xl flex flex-col h-[600px]">
                             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
                                 <div className="flex items-center gap-3">
                                     <ClipboardCheck className="w-5 h-5 text-emerald-500" />
@@ -242,7 +239,7 @@ export function AICVOptimizer({ onResumeSaved, currentSavedSize = 0 }: AICVOptim
                                 <div className="flex items-center gap-2 w-full sm:w-auto">
                                     <button
                                         onClick={copyToClipboard}
-                                        className="flex-1 sm:flex-none flex justify-center items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 text-[#ededed] rounded-xl text-xs font-bold transition-all border border-white/5"
+                                        className="flex-1 sm:flex-none flex justify-center items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 text-[#ededed] rounded-xl text-xs font-bold transition-all border border-white/5 cursor-pointer"
                                     >
                                         <ClipboardCheck className="w-4 h-4" />
                                         <span>Copy</span>
@@ -250,7 +247,7 @@ export function AICVOptimizer({ onResumeSaved, currentSavedSize = 0 }: AICVOptim
                                     <button
                                         onClick={handleSaveToVault}
                                         disabled={isSaving || currentSavedSize >= 4}
-                                        className="flex-1 sm:flex-none flex justify-center items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:bg-blue-600/50 text-white rounded-xl text-xs font-bold transition-all"
+                                        className="flex-1 sm:flex-none flex justify-center items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:bg-blue-600/50 text-white rounded-xl text-xs font-bold transition-all cursor-pointer"
                                     >
                                         {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                                         <span>{currentSavedSize >= 4 ? "Limit Reached (4/4)" : "Save Result"}</span>

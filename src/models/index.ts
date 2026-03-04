@@ -175,6 +175,7 @@ export interface IResume {
     content: string; // LaTeX code or Raw Text
     format: 'latex' | 'text';
     actsAsBase: boolean; // If true, used in experience pooling
+    isAnchor: boolean; // If true, this is the structural template for AI
     isMasterTemplate: boolean;
     createdAt: Date;
     updatedAt: Date;
@@ -186,6 +187,7 @@ const ResumeSchema = new Schema({
     content: { type: String, required: true },
     format: { type: String, enum: ['latex', 'text'], default: 'latex' },
     actsAsBase: { type: Boolean, default: true },
+    isAnchor: { type: Boolean, default: false },
     isMasterTemplate: { type: Boolean, default: false }
 }, {
     timestamps: true,

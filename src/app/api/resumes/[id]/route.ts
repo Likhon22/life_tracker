@@ -19,6 +19,14 @@ export async function PATCH(
 
         await connectToDatabase();
 
+        // If setting as anchor, unset others
+        if (body.isAnchor === true) {
+            await Resume.updateMany(
+                { userId: session.user.id, _id: { $ne: id } },
+                { $set: { isAnchor: false } }
+            );
+        }
+
         // Ensure user owns the resume
         const resume = await Resume.findOne({ _id: id, userId: session.user.id });
         if (!resume) {

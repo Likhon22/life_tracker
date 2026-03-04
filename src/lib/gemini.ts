@@ -14,6 +14,7 @@ export async function optimizeResume(
     userResumes: { content: string; format: 'latex' | 'text' }[],
     jobDescription: string,
     masterTemplates: { name: string; content: string }[],
+    anchorResume?: { content: string; format: 'latex' | 'text' },
     tempContent?: string,
     userInfo?: { name: string; email: string }
 ): Promise<OptimizationResult> {
@@ -38,13 +39,21 @@ Your mission is to construct the ultimate, perfectly tailored, 1-page LaTeX resu
 SECTION 1: MISSION DIRECTIVES & STRICT CONSTRAINTS
 ================================================================================
 1.  **THE "1-TO-1 SWAP" LENGTH RULE (ABSOLUTE 1-PAGE LIMIT)**:
-    *   AI models cannot 'see' physical A4 pages. Therefore, you MUST use the chosen Base Template (either the user's best LaTeX CV or the Master Template) as a strict container.
-    *   You MUST NOT randomly append new projects. If you add a bullet or a project from Source 2 into Source 1, you MUST REMOVE an equally long bullet/project from Source 1.
-    *   Maintain the EXACT SAME approximate word count and number of bullet points as the chosen Base Template. DO NOT mess with the LaTeX spacing macros, font sizes, or margins to cheat the system. Fit the content to the existing structure.
-2.  **LATEX ARCHITECTURE SELECTION**:
-    *   Review the 4 provided Source CVs. Select the ONE clean, most professional LaTeX structure to act as the "Base Container".
-    *   If the user ONLY provided raw text or their LaTeX is fundamentally broken, you MUST use one of the provided "MASTER LATEX TEMPLATES" as the Base Container.
+    *   AI models cannot 'see' physical A4 pages. Therefore, you MUST use the provided "PRIORITY TEMPLATE" as a strict, unbreakable spatial map.
+    *   **ONE PARA TO ONE PARA**: If Source 1 has a 3-bullet experience item, your output for that role MUST have exactly 3 bullets. If a paragraph has 30 words, your replacement MUST NOT exceed 30 words.
+    *   DO NOT expand text. If the JD requires more skills than fit, you must DELETE existing less-relevant skills from the anchor to make room. 
+    *   The total line count and vertical height of the resulting LaTeX MUST BE EQUAL OR LESS than the Priority template.
+2.  **LATEX ARCHITECTURE SELECTION (STRICT HIERARCHY)**:
+    *   **PRIORITY 1 (THE PRIORITY RESUME)**: If a "PRIORITY TEMPLATE" is provided, you MUST use its LaTeX code as your foundation. 
+        - **BYTE-FOR-BYTE CLONE**: You are no longer an AI writer. You are a **RegEx Find-and-Replace Engine**. You must literally COPY the entire structure of the Priority CV from the very first \`%\` sign down to \`\\end{document}\`. Every single package, spacing command (like \`\\quad\`), styling macro, and alignment definition MUST BE IDENTICAL to the source.
+        - **BACKSLASH SAFETY**: The sequence "\\\\[5pt]" MUST REMAIN "\\\\[5pt]". DO NOT change it to "\\\[5pt]". DO NOT "clean up" or format the LaTeX code.
+        - **LOCALIZED CONTENT SWAP ONLY**: Your ONLY job is to change the english words *inside* the content blocks (like the bullet points in Experience, the text in Summary, or the list of Skills). Do not rewrite sections. If the source says \`\\Huge{John Doe}\`, change it to your generated name \`\\Huge{Jane Smith}\`, but DO NOT change it to \`\\begin{center}\\Huge Jane Smith\\end{center}\`. Keep the EXACT same alignment and structural commands.
+        - **STRUCTURAL SKELETON**: Do not add or remove columns, tables, or itemize environments. If there is a \`\\begin{tabularx}\` table with 2 columns, populate it with exactly 2 columns. If a heading is strictly capitalized in the source, keep it capitalized.
+    *   **PRIORITY 2 (MASTER FALLBACK)**: Only if no priority resume is provided, select one of the "MASTER LATEX TEMPLATES":
+        - If the user's source material contains professional internships or jobs, use: "masterTemplateWithExperience".
+        - If the user is a student or has zero professional roles, use: "masterTemplateWithoutExperience".
     *   Do NOT invent your own document classes or obscure packages. Rely on standard macros (article, tabular, itemize, etc.).
+    *   **NO NEW PACKAGES**: Strictly forbidden from adding "\\usepackage{...}" commands that are not present in the Priority Template. Specifically, DO NOT add "fontspec", as it breaks "pdflatex" environments. Your output must remain 100% compatible with the "pdflatex" engine unless the Priority Template specifically uses XeLaTeX/LuaTeX packages.
 3.  **NO HALLUCINATIONS**: You are strictly forbidden from inventing companies, degrees, metrics, or roles. You may ONLY use facts present in the Experience Pool.
 4.  **SYNTHESIS RULE**: Your goal is NOT to copy-paste all 4 CVs together. You must read ALL sources, extract the best bullets for the JD, and weave them into the ONE chosen Base Container.
 
@@ -66,10 +75,10 @@ SECTION 2: APPLICANT TRACKING SYSTEM (ATS) OPTIMIZATION PROTOCOLS
 ================================================================================
 SECTION 3: CONTENT EXTRACTION & MAPPING LOGIC
 ================================================================================
-1.  **Contact Info (STRICT HIERARCHY)**: 
-    *   CRITICAL: Do NOT under ANY circumstances use the name, email, phone number, LinkedIn, or GitHub from the "MASTER LATEX TEMPLATES". That is dummy data.
-    *   **PRIORITY 1**: You MUST extract the real contact info (Name, Email, Phone, LinkedIn) from the "USER EXPERIENCE POOL" (Source 1, 2, 3, or 4). Use this above all else.
-    *   **PRIORITY 2**: ONLY if the user's provided CVs/text completely lack a name or email, use this fallback session info: Name: ${userInfo?.name || "[Your Name]"}, Email: ${userInfo?.email || "[Your Email]"}. Use random placeholders like "+1 234 567 8900" for missing phone numbers.
+1.  **Contact Info & Header (STRICT HIERARCHY)**: 
+    *   **PRIORITY 1 (ABSOLUTE LOCKDOWN)**: If a "PRIORITY TEMPLATE" is provided, you are **COMPLETELY FORBIDDEN** from altering the header section. Every single byte before the first major section (like "Summary" or "Experience") MUST BE COPIED EXACTLY. The Name format, the \`\\href\` links, the icons, the \`\\begin{tabular}\` structure, and the exact contact details must remain 100% untouched. DO NOT update the name or email to match other sources.
+    *   **PRIORITY 2**: If NO Priority Template is provided (and you are using a "MASTER LATEX TEMPLATE"), you MUST extract the real contact info (Name, Email, Phone, LinkedIn) from the "USER EXPERIENCE POOL" (Source 1, 2, 3, or 4). Do NOT use the dummy data in the Master Template.
+    *   **PRIORITY 3**: ONLY if the user's provided CVs/text completely lack a name or email, use this fallback session info: Name: \${userInfo?.name || "[Your Name]"}, Email: \${userInfo?.email || "[Your Email]"}. Use random placeholders like "+1 234 567 8900" for missing phone numbers.
 2.  **Summary/Objective**: If used in the template, write a 2-3 sentence high-impact summary directly aligning the applicant's core identity with the JD's top requirement.
 3.  **Experience**: Order chronologically (newest first). Select ONLY the roles and bullets that prove competence for the JD. If a past role is irrelevant, minimize it to just Title/Company/Dates.
 4.  **Projects**: Include standalone projects ONLY if they bridge a skill gap not covered by work experience.
@@ -83,11 +92,15 @@ SECTION 4: INPUT DATA
 ${jobDescription}
 [END TARGET JOB DESCRIPTION]
 
+[BEGIN PRIORITY TEMPLATE (MANDATORY STRUCTURE)]
+${anchorResume ? `--- PRIORITY (LATEX) ---\n${anchorResume.content}\n-----------------------------` : "NO USER PRIORITY CV PROVIDED. USE MASTER TEMPLATE BELOW."}
+[END PRIORITY TEMPLATE]
+
 [BEGIN USER EXPERIENCE POOL (Source Material)]
 ${allSources.map((r, i) => `--- SOURCE ${i + 1} (${r.format.toUpperCase()}) ---\n${r.content}\n-----------------------------`).join("\n\n")}
 [END USER EXPERIENCE POOL]
 
-[BEGIN MASTER LATEX TEMPLATES (Use ONLY if needed based on Directive 2)]
+[BEGIN MASTER LATEX TEMPLATES (Use ONLY if NO ANCHOR is provided)]
 ${masterTemplates.map(t => `--- TEMPLATE: ${t.name} ---\n${t.content}\n-----------------------------`).join("\n\n")}
 [END MASTER LATEX TEMPLATES]
 
@@ -115,8 +128,13 @@ SECTION 4: FINAL EVALUATION & SCORING (STRICT PROTOCOL)
 ================================================================================
 SECTION 5: OUTPUT REQUIREMENTS
 ================================================================================
-Respond EXACTLY in this JSON structure. Do NOT include markdown blocks (\`\`\`json) or any conversational text around it.
-
+1.  **Respond EXACTLY in the JSON structure below.**
+    - Respond ONLY with the JSON object. No conversational text.
+    - Ensure all LaTeX special characters in the text (like %, &, $) are properly escaped *if and only if* they are part of the content text, not the LaTeX macros.
+2.  **THE FINAL INTEGRITY CHECK (ABSOLUTE REQUIREMENT)**:
+    - **CATASTROPHIC FAILURE WARNING**: Do NOT truncate the output. You MUST return the ENTIRE LaTeX document from the very first line of the Preamble down to the final \`\\end{document}\`. If your response stops abruptly before \`\\end{document}\`, the system will crash.
+    - **ENVIRONMENT BALANCING**: Every single \`\\begin{...}\` MUST have a matching \`\\end{...}\`. If you open a \`itemize\`, \`tabularx\`, or \`document\` environment, YOU MUST CLOSE IT.
+    - **CRITICAL**: The final \`optimizedLatex\` string must be a fully valid, compileable LaTeX document that looks identical in structure to the Priority Template but contains the new, optimized content.
 {
     "optimizedLatex": "string containing the fully compilable LaTeX code. Ensure all special characters (%, &, $, #, _, {, }, ~, ^, \\\\) are properly escaped for JSON and LaTeX.",
     "fitPercentage": number, // An integer (0-100) calculated based on the "FINAL EVALUATION & SCORING" protocol.

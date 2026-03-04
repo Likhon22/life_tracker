@@ -43,14 +43,21 @@ export async function POST(request: Request) {
             isMasterTemplate: false
         });
 
-        // 2. Fetch Master Templates for structural fallback
+        // 2. Find the Structural Anchor (Priority CV)
+        const anchor = await Resume.findOne({
+            userId: session.user.id,
+            isAnchor: true
+        });
+
+        // 3. Fetch Master Templates for structural fallback
         const masterTemplates = await Resume.find({ isMasterTemplate: true });
 
-        // 3. AI Orchestration
+        // 4. AI Orchestration
         const result = await optimizeResume(
             userPool.map(r => ({ content: r.content, format: r.format })),
             jobDescription,
             masterTemplates.map(t => ({ name: t.name, content: t.content })),
+            anchor ? { content: anchor.content, format: anchor.format } : undefined,
             tempContent,
             { name: session.user.name || '', email: session.user.email || '' }
         );

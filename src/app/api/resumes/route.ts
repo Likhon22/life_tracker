@@ -53,12 +53,20 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: "Maximum of 4 custom resumes allowed" }, { status: 400 });
         }
 
+        // Check if this is the first LaTeX resume for the user to auto-anchor it
+        const existingLatexCount = await Resume.countDocuments({
+            userId: session.user.id,
+            format: 'latex',
+            isMasterTemplate: false
+        });
+
         const newResume = await Resume.create({
             userId: session.user.id,
             name,
             content,
             format,
             actsAsBase,
+            isAnchor: format === 'latex' && existingLatexCount === 0,
             isMasterTemplate: false
         });
 

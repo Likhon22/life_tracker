@@ -48,7 +48,7 @@ export function ModulePage({
                 <header className={cn("flex-none px-4 md:px-8 pt-8 md:pt-12 pb-6 w-full mx-auto", maxWidth)}>
                     <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                         <div className="flex flex-col gap-2">
-                            <h1 className="text-3xl md:text-5xl font-black text-white tracking-tighter italic capitalize">{title}</h1>
+                            <h1 className="text-3xl md:text-5xl font-black text-white tracking-tighter capitalize">{title}</h1>
                             <p className="text-[#888888] text-sm md:text-base font-medium">{subtitle}</p>
                         </div>
                         {headerContent}
