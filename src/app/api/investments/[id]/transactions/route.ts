@@ -52,3 +52,28 @@ export async function DELETE(
         return NextResponse.json({ error: "Failed to delete transaction" }, { status: 500 });
     }
 }
+
+export async function PUT(
+    request: Request,
+    { params }: { params: Promise<{ id: string }> }
+) {
+    try {
+        const session = await getServerSession(authOptions);
+        if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+        const { id } = await params;
+        const { type, amount, date, note } = await request.json();
+
+        await connectToDatabase();
+        const transaction = await InvestmentTransaction.findOneAndUpdate(
+            { _id: id, userId: session.user.id },
+            { type, amount, date, note },
+            { new: true }
+        );
+
+        return NextResponse.json(transaction);
+    } catch (error) {
+        return NextResponse.json({ error: "Failed to update transaction" }, { status: 500 });
+    }
+}
+

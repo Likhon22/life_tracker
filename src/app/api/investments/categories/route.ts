@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import connectToDatabase from "@/lib/mongodb";
-import { InvestmentCategory } from "@/models";
+import { InvestmentCategory, Investment } from "@/models";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
@@ -27,6 +27,14 @@ export async function POST(request: Request) {
 
         await connectToDatabase();
         const category = await InvestmentCategory.create({ userId: session.user.id, name, icon });
+        
+        // Auto-create default General investment
+        await Investment.create({
+            userId: session.user.id,
+            name: "General",
+            categoryId: category._id
+        });
+
         return NextResponse.json(category, { status: 201 });
     } catch (error) {
         return NextResponse.json({ error: "Failed to create category" }, { status: 500 });
