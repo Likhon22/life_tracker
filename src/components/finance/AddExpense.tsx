@@ -11,6 +11,7 @@ import { CategoryManager } from "./CategoryManager";
 export function AddExpense() {
     const { categories, addExpense, isFutureMonth } = useFinance();
     const [amount, setAmount] = useState<string>("");
+    const [selectedDate, setSelectedDate] = useState(format(new Date(), "yyyy-MM-dd"));
     const [selectedCategoryId, setSelectedCategoryId] = useState<string>("");
     const [note, setNote] = useState<string>("");
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -25,7 +26,7 @@ export function AddExpense() {
         setIsSubmitting(true);
         try {
             await addExpense({
-                date: format(new Date(), "yyyy-MM-dd"),
+                date: selectedDate || format(new Date(), "yyyy-MM-dd"),
                 amount: evaluatedAmount,
                 categoryId: selectedCategoryId,
                 note: note.trim()
@@ -33,6 +34,7 @@ export function AddExpense() {
             setAmount("");
             setNote("");
             setSelectedCategoryId("");
+            setSelectedDate(format(new Date(), "yyyy-MM-dd"));
         } finally {
             setIsSubmitting(false);
         }
@@ -125,17 +127,28 @@ export function AddExpense() {
                     )}
                 </div>
 
-                {/* Amount Input */}
-                <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-[#AAAAAA] uppercase tracking-[0.2em] px-1">Amount</label>
-                    <input
-                        type="text"
-                        placeholder="0.00 (e.g. 5600+100)"
-                        value={amount}
-                        onChange={(e) => setAmount(e.target.value)}
-                        className="w-full bg-white/5 border border-white/5 focus:border-blue-500 focus:bg-white/[0.08] text-white rounded-xl py-3.5 px-4 outline-none transition-all placeholder:text-[#444444] font-medium text-lg"
-                        required
-                    />
+                {/* Amount & Date Row */}
+                <div className="grid grid-cols-[1fr_auto] gap-3">
+                    <div className="space-y-2">
+                        <label className="text-[10px] font-bold text-[#AAAAAA] uppercase tracking-[0.2em] px-1">Amount</label>
+                        <input
+                            type="text"
+                            placeholder="0.00 (e.g. 5600+100)"
+                            value={amount}
+                            onChange={(e) => setAmount(e.target.value)}
+                            className="w-full bg-white/5 border border-white/5 focus:border-blue-500 focus:bg-white/[0.08] text-white rounded-xl py-3.5 px-4 outline-none transition-all placeholder:text-[#444444] font-medium text-lg"
+                            required
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <label className="text-[10px] font-bold text-[#AAAAAA] uppercase tracking-[0.2em] px-1">Date</label>
+                        <input
+                            type="date"
+                            value={selectedDate}
+                            onChange={(e) => setSelectedDate(e.target.value)}
+                            className="h-[54px] bg-white/5 border border-white/5 focus:border-blue-500 focus:bg-white/[0.08] text-white rounded-xl py-3.5 px-4 outline-none transition-all font-medium text-sm [color-scheme:dark]"
+                        />
+                    </div>
                 </div>
 
                 {/* Note Input */}
