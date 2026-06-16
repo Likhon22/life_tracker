@@ -93,9 +93,23 @@ export default function InvestmentsPage() {
     };
 
     const handleDeleteCategory = async (id: string) => {
-        if (!confirm("Are you sure? This will delete this category and all investments inside it.")) return;
+        // Pre-check on the frontend
+        const folderInvestments = investments.filter(inv => {
+            const catId = typeof inv.categoryId === 'string' ? inv.categoryId : inv.categoryId?.id;
+            return catId === id;
+        });
+        const hasTransactions = folderInvestments.some(inv => inv.transactions && inv.transactions.length > 0);
+
+        if (hasTransactions) {
+            toast.error("Cannot delete folder because it contains transaction history. Delete the transactions first.");
+            return;
+        }
+
+        if (!confirm("Are you sure? This will delete this category and any empty assets inside it.")) return;
         try {
             const res = await fetch(`/api/investments/categories/${id}`, { method: "DELETE" });
+            const data = await res.json();
+            
             if (res.ok) {
                 setCategories(categories.filter(c => c.id !== id));
                 setInvestments(investments.filter(inv => {
@@ -104,8 +118,10 @@ export default function InvestmentsPage() {
                 }));
                 if (expandedCategoryId === id) setExpandedCategoryId(null);
                 toast.success("Category folder deleted");
+            } else {
+                toast.error(data.error || "Failed to delete category");
             }
-        } catch { toast.error("Failed"); }
+        } catch { toast.error("Failed to delete category"); }
     };
 
     const handleAddInvestment = async (catId: string) => {

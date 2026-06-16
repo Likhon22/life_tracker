@@ -15,14 +15,26 @@ export async function DELETE(
         const { id } = await params;
         await connectToDatabase();
 
-        // Delete all transactions and investments under this category
+        // Get investments under this category
         const investments = await Investment.find({ categoryId: id, userId: session.user.id });
         const investmentIds = investments.map(i => i._id);
-        await InvestmentTransaction.deleteMany({ investmentId: { $in: investmentIds } });
+
+        // Check if there are any transactions under these investments
+        const transactionCount = await InvestmentTransaction.countDocuments({
+            investmentId: { $in: investmentIds }
+        });
+
+        if (transactionCount > 0) {
+            return NextResponse.json(
+                { error: "Cannot delete folder because it contains transaction history. Delete the transactions first." },
+                { status: 400 }
+            );
+        }
+
         await Investment.deleteMany({ categoryId: id, userId: session.user.id });
         await InvestmentCategory.deleteOne({ _id: id, userId: session.user.id });
 
-        return NextResponse.json({ message: "Category and all related data deleted" });
+        return NextResponse.json({ message: "Category and empty assets deleted successfully" });
     } catch (error) {
         return NextResponse.json({ error: "Failed to delete category" }, { status: 500 });
     }
