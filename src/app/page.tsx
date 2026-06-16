@@ -9,7 +9,8 @@ import {
     ChevronRight,
     TrendingUp,
     FileCode,
-    Sparkles
+    Sparkles,
+    Landmark
 } from "lucide-react";
 import { ModulePage } from "@/components/ModulePage";
 
@@ -92,6 +93,23 @@ export default function Dashboard() {
                             <TrendingUp className="w-5 h-5 text-emerald-500 mb-1" />
                         </div>
                         <p className="text-xs text-[#555555]">Review expenditures and manage fixed costs.</p>
+                    </div>
+                </DashboardCard>
+
+                {/* Investment Tracker Preview */}
+                <DashboardCard
+                    title="Investment Tracker"
+                    icon={<Landmark className="w-5 h-5 text-orange-500" />}
+                    href="/investments"
+                    subtitle="Monitor your portfolio"
+                >
+                    <div className="flex flex-col gap-2">
+                        <span className="text-xs text-[#888888] font-medium uppercase tracking-widest">Portfolio Status</span>
+                        <div className="flex items-end gap-2">
+                            <span className="text-2xl font-black text-white tracking-tighter">Active</span>
+                            <TrendingUp className="w-5 h-5 text-orange-500 mb-1" />
+                        </div>
+                        <p className="text-xs text-[#555555]">Track crypto, stocks, and business investments.</p>
                     </div>
                 </DashboardCard>
             </div>

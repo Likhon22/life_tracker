@@ -128,25 +128,25 @@ export function AddExpense() {
                 </div>
 
                 {/* Amount & Date Row */}
-                <div className="grid grid-cols-[1fr_auto] gap-3">
-                    <div className="space-y-2">
+                <div className="grid grid-cols-1 sm:grid-cols-[2fr_1fr] gap-3">
+                    <div className="flex flex-col gap-2">
                         <label className="text-[10px] font-bold text-[#AAAAAA] uppercase tracking-[0.2em] px-1">Amount</label>
                         <input
                             type="text"
                             placeholder="0.00 (e.g. 5600+100)"
                             value={amount}
                             onChange={(e) => setAmount(e.target.value)}
-                            className="w-full bg-white/5 border border-white/5 focus:border-blue-500 focus:bg-white/[0.08] text-white rounded-xl py-3.5 px-4 outline-none transition-all placeholder:text-[#444444] font-medium text-lg"
+                            className="w-full bg-white/5 border border-white/5 focus:border-blue-500 focus:bg-white/[0.08] text-white rounded-xl py-3.5 px-4 outline-none transition-all placeholder:text-[#444444] font-medium text-lg h-[54px]"
                             required
                         />
                     </div>
-                    <div className="space-y-2">
+                    <div className="flex flex-col gap-2">
                         <label className="text-[10px] font-bold text-[#AAAAAA] uppercase tracking-[0.2em] px-1">Date</label>
                         <input
                             type="date"
                             value={selectedDate}
                             onChange={(e) => setSelectedDate(e.target.value)}
-                            className="h-[54px] bg-white/5 border border-white/5 focus:border-blue-500 focus:bg-white/[0.08] text-white rounded-xl py-3.5 px-4 outline-none transition-all font-medium text-sm [color-scheme:dark]"
+                            className="w-full bg-white/5 border border-white/5 focus:border-blue-500 focus:bg-white/[0.08] text-white rounded-xl py-3.5 px-4 outline-none transition-all font-medium text-sm [color-scheme:dark] h-[54px]"
                         />
                     </div>
                 </div>

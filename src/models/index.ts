@@ -200,3 +200,63 @@ const ResumeSchema = new Schema({
 
 ResumeSchema.virtual('id').get(function (this: any) { return this._id.toHexString(); });
 export const Resume = mongoose.models.Resume || mongoose.model<IResume>("Resume", ResumeSchema);
+
+// --- Investment Models ---
+
+export interface IInvestmentCategory {
+    userId: string;
+    name: string;
+    icon: string;
+}
+
+const InvestmentCategorySchema = new Schema({
+    userId: { type: String, required: true, index: true },
+    name: { type: String, required: true },
+    icon: { type: String, required: true }
+}, {
+    toJSON: { virtuals: true, versionKey: false, transform: (doc: any, ret: any) => { delete ret._id; } }
+});
+InvestmentCategorySchema.virtual('id').get(function (this: any) { return this._id.toHexString(); });
+export const InvestmentCategory = mongoose.models.InvestmentCategory || mongoose.model<IInvestmentCategory>("InvestmentCategory", InvestmentCategorySchema);
+
+export interface IInvestment {
+    userId: string;
+    name: string;
+    categoryId: mongoose.Types.ObjectId;
+    note?: string;
+}
+
+const InvestmentSchema = new Schema({
+    userId: { type: String, required: true, index: true },
+    name: { type: String, required: true },
+    categoryId: { type: Schema.Types.ObjectId, ref: "InvestmentCategory", required: true },
+    note: { type: String }
+}, {
+    timestamps: true,
+    toJSON: { virtuals: true, versionKey: false, transform: (doc: any, ret: any) => { delete ret._id; } }
+});
+InvestmentSchema.virtual('id').get(function (this: any) { return this._id.toHexString(); });
+export const Investment = mongoose.models.Investment || mongoose.model<IInvestment>("Investment", InvestmentSchema);
+
+export interface IInvestmentTransaction {
+    userId: string;
+    investmentId: mongoose.Types.ObjectId;
+    type: 'invest' | 'withdraw';
+    amount: number;
+    date: string; // YYYY-MM-DD
+    note?: string;
+}
+
+const InvestmentTransactionSchema = new Schema({
+    userId: { type: String, required: true, index: true },
+    investmentId: { type: Schema.Types.ObjectId, ref: "Investment", required: true, index: true },
+    type: { type: String, enum: ['invest', 'withdraw'], required: true },
+    amount: { type: Number, required: true },
+    date: { type: String, required: true },
+    note: { type: String }
+}, {
+    timestamps: true,
+    toJSON: { virtuals: true, versionKey: false, transform: (doc: any, ret: any) => { delete ret._id; } }
+});
+InvestmentTransactionSchema.virtual('id').get(function (this: any) { return this._id.toHexString(); });
+export const InvestmentTransaction = mongoose.models.InvestmentTransaction || mongoose.model<IInvestmentTransaction>("InvestmentTransaction", InvestmentTransactionSchema);
