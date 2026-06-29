@@ -25,13 +25,20 @@ export async function GET(request: Request) {
             const totalInvested = transactions.filter(t => t.type === 'invest').reduce((sum: number, t: any) => sum + t.amount, 0);
             const totalWithdrawn = transactions.filter(t => t.type === 'withdraw').reduce((sum: number, t: any) => sum + t.amount, 0);
 
+            // Get the earliest and latest transaction dates
+            const dates = transactions.map(t => t.date).filter(Boolean).sort();
+            const firstEntryDate = dates.length > 0 ? dates[0] : null;
+            const latestEntryDate = dates.length > 0 ? dates[dates.length - 1] : null;
+
             return {
                 ...inv.toJSON(),
                 transactions: transactions.map(t => t.toJSON()),
                 totalInvested,
                 totalWithdrawn,
                 activeCapital: totalInvested - totalWithdrawn,
-                pnl: totalWithdrawn - totalInvested
+                pnl: totalWithdrawn - totalInvested,
+                firstEntryDate,
+                latestEntryDate
             };
         }));
 

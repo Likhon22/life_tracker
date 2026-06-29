@@ -24,6 +24,7 @@ type InvestmentItem = {
     id: string; name: string; categoryId: Category | string; note?: string;
     transactions: Transaction[];
     totalInvested: number; totalWithdrawn: number; activeCapital: number; pnl: number;
+    firstEntryDate: string | null; latestEntryDate: string | null;
 };
 
 export default function InvestmentsPage() {
@@ -57,6 +58,11 @@ export default function InvestmentsPage() {
     const [editTxDate, setEditTxDate] = useState("");
     const [editTxNote, setEditTxNote] = useState("");
     const [editTxType, setEditTxType] = useState<'invest' | 'withdraw'>('invest');
+
+    // Edit Investment Asset
+    const [editingInvId, setEditingInvId] = useState<string | null>(null);
+    const [editInvName, setEditInvName] = useState("");
+    const [editInvNote, setEditInvNote] = useState("");
 
     const fetchData = async () => {
         try {
@@ -204,6 +210,30 @@ export default function InvestmentsPage() {
                 toast.success("Transaction updated");
             }
         } catch { toast.error("Failed to update transaction"); }
+    };
+
+    const startEditInvestment = (inv: InvestmentItem) => {
+        setEditingInvId(inv.id);
+        setEditInvName(inv.name);
+        setEditInvNote(inv.note || "");
+    };
+
+    const handleSaveInvestment = async (id: string) => {
+        try {
+            const res = await fetch(`/api/investments/${id}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name: editInvName, note: editInvNote })
+            });
+            if (res.ok) {
+                await fetchData();
+                setEditingInvId(null);
+                toast.success("Asset updated");
+            } else {
+                const data = await res.json();
+                toast.error(data.error || "Failed to update");
+            }
+        } catch { toast.error("Failed to update asset"); }
     };
 
     // Global Grand Totals
@@ -388,19 +418,52 @@ export default function InvestmentsPage() {
                                                 {folderInvestments.map(inv => {
                                                     const isAddingTx = txInvestmentId === inv.id;
                                                     const isHistoryExpanded = expandedInvestmentId === inv.id;
+                                                    const isEditingInv = editingInvId === inv.id;
 
                                                     return (
                                                         <div key={inv.id} className="bg-[#1c1c1c] border border-white/5 rounded-xl overflow-hidden hover:border-white/10 transition-all">
                                                             {/* Asset Details Header */}
+                                                            {isEditingInv ? (
+                                                                <div className="p-4 space-y-3 bg-blue-500/5 border-b border-blue-500/20 animate-in fade-in duration-200">
+                                                                    <div className="flex items-center gap-2 mb-1">
+                                                                        <Edit2 className="w-3.5 h-3.5 text-blue-400" />
+                                                                        <span className="text-[10px] font-bold text-blue-400 uppercase tracking-widest">Edit Asset</span>
+                                                                    </div>
+                                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                                        <div className="flex flex-col gap-1">
+                                                                            <label className="text-[8px] font-black text-[#666] uppercase tracking-widest pl-1">Name</label>
+                                                                            <input value={editInvName} onChange={e => setEditInvName(e.target.value)} className="bg-[#111] border border-white/10 rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-blue-500 h-[34px]" />
+                                                                        </div>
+                                                                        <div className="flex flex-col gap-1">
+                                                                            <label className="text-[8px] font-black text-[#666] uppercase tracking-widest pl-1">Note</label>
+                                                                            <input value={editInvNote} onChange={e => setEditInvNote(e.target.value)} placeholder="Optional note..." className="bg-[#111] border border-white/10 rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-blue-500 h-[34px]" />
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="flex gap-2">
+                                                                        <button onClick={() => handleSaveInvestment(inv.id)} className="bg-green-600 hover:bg-green-500 text-white px-4 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-all flex items-center gap-1">
+                                                                            <Check className="w-3 h-3" /> Save
+                                                                        </button>
+                                                                        <button onClick={() => setEditingInvId(null)} className="bg-white/5 hover:bg-white/10 text-white px-4 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-all flex items-center gap-1">
+                                                                            <X className="w-3 h-3" /> Cancel
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                            ) : (
                                                             <div className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                                                                 <div>
                                                                     <div className="flex items-center gap-2">
                                                                         <span className="font-bold text-sm text-white">{inv.name}</span>
                                                                         {inv.note && <span className="text-[10px] text-[#555] italic">({inv.note})</span>}
                                                                     </div>
-                                                                    <div className="flex items-center gap-4 mt-1">
+                                                                    <div className="flex items-center gap-4 mt-1 flex-wrap">
                                                                         <span className="text-[10px] text-[#666]">Invested: <strong className="text-[#888]">{inv.totalInvested.toLocaleString()}</strong></span>
                                                                         <span className="text-[10px] text-[#666]">Withdrawn: <strong className="text-[#888]">{inv.totalWithdrawn.toLocaleString()}</strong></span>
+                                                                        {inv.firstEntryDate && (
+                                                                            <span className="text-[10px] text-[#555]">Entry: <strong className="text-[#777]">{inv.firstEntryDate}</strong></span>
+                                                                        )}
+                                                                        {inv.latestEntryDate && inv.latestEntryDate !== inv.firstEntryDate && (
+                                                                            <span className="text-[10px] text-[#555]">Latest: <strong className="text-[#777]">{inv.latestEntryDate}</strong></span>
+                                                                        )}
                                                                     </div>
                                                                 </div>
 
@@ -426,20 +489,27 @@ export default function InvestmentsPage() {
                                                                             <ArrowUpCircle className="w-3 h-3" /> Withdraw
                                                                         </button>
                                                                         <button
+                                                                            onClick={() => startEditInvestment(inv)}
+                                                                            className="p-1.5 bg-white/5 hover:bg-blue-500/10 hover:text-blue-400 text-[#888] rounded-lg transition-all cursor-pointer"
+                                                                        >
+                                                                            <Edit2 className="w-3.5 h-3.5" />
+                                                                        </button>
+                                                                        <button
                                                                             onClick={() => setExpandedInvestmentId(isHistoryExpanded ? null : inv.id)}
-                                                                            className="p-1.5 bg-white/5 hover:bg-white/10 text-white rounded-lg transition-all"
+                                                                            className="p-1.5 bg-white/5 hover:bg-white/10 text-white rounded-lg transition-all cursor-pointer"
                                                                         >
                                                                             {isHistoryExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                                                                         </button>
                                                                         <button
                                                                             onClick={() => handleDeleteInvestment(inv.id)}
-                                                                            className="p-1.5 bg-white/5 hover:bg-red-500/10 hover:text-red-500 text-white rounded-lg transition-all"
+                                                                            className="p-1.5 bg-white/5 hover:bg-red-500/10 hover:text-red-500 text-white rounded-lg transition-all cursor-pointer"
                                                                         >
                                                                             <Trash2 className="w-3.5 h-3.5" />
                                                                         </button>
                                                                     </div>
                                                                 </div>
                                                             </div>
+                                                            )}
 
                                                             {/* Record Transaction Form */}
                                                             {isAddingTx && (
