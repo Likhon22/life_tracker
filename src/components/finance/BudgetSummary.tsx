@@ -1,14 +1,21 @@
 "use client";
 
 import { useFinance } from "@/components/FinanceProvider";
-import { TrendingUp, Wallet, ArrowDownCircle, ArrowUpCircle, Edit2, Check, X } from "lucide-react";
+import { TrendingUp, Wallet, ArrowDownCircle, ArrowUpCircle, ShoppingCart, CalendarDays, Edit2, Check, X } from "lucide-react";
 import { cn, evaluateMath } from "@/lib/utils";
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import { getDate, getDaysInMonth } from "date-fns";
 
 export function BudgetSummary() {
-    const { budget, totalSpent, remainingBudget, updateBudget, isFutureMonth } = useFinance();
+    const { budget, totalSpent, totalDailyExpenses, selectedMonth, isCurrentMonth, remainingBudget, updateBudget, isFutureMonth } = useFinance();
     const [isEditing, setIsEditing] = useState(false);
     const [newBudget, setNewBudget] = useState(budget.toString());
+
+    const dailyExpenseAvg = useMemo(() => {
+        const [year, month] = selectedMonth.split("-").map(Number);
+        const divisor = isCurrentMonth ? getDate(new Date()) : getDaysInMonth(new Date(year, month - 1));
+        return divisor > 0 ? totalDailyExpenses / divisor : 0;
+    }, [totalDailyExpenses, selectedMonth, isCurrentMonth]);
 
     const handleSave = async () => {
         const val = evaluateMath(newBudget);
@@ -84,6 +91,26 @@ export function BudgetSummary() {
                     <div className="flex items-center gap-1.5 text-xs font-medium text-red-500/80 bg-red-500/5 px-2 py-1 rounded-md">
                         <TrendingUp className="w-3 h-3" />
                         {budget > 0 ? ((totalSpent / budget) * 100).toFixed(0) : 0}%
+                    </div>
+                </div>
+
+                {/* Regular Expense & Daily Average */}
+                <div className="grid grid-cols-2 gap-3 border-b border-white/5 pb-4">
+                    <div className="flex flex-col gap-1.5 bg-white/[0.03] rounded-xl p-3 min-w-0">
+                        <div className="flex items-center gap-1.5 text-[#AAAAAA]">
+                            <ShoppingCart className="w-3 h-3 shrink-0" />
+                            <span className="text-[9px] font-bold uppercase tracking-[0.15em] truncate">Regular Expense</span>
+                        </div>
+                        <div className="text-lg font-bold text-white tracking-tight truncate">{totalDailyExpenses.toLocaleString()}</div>
+                    </div>
+                    <div className="flex flex-col gap-1.5 bg-white/[0.03] rounded-xl p-3 min-w-0">
+                        <div className="flex items-center gap-1.5 text-[#AAAAAA]">
+                            <CalendarDays className="w-3 h-3 shrink-0" />
+                            <span className="text-[9px] font-bold uppercase tracking-[0.15em] truncate">Daily Avg</span>
+                        </div>
+                        <div className="text-lg font-bold text-white tracking-tight truncate">
+                            {dailyExpenseAvg.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                        </div>
                     </div>
                 </div>
 

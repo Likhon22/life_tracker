@@ -98,24 +98,11 @@ export default function InvestmentsPage() {
         } catch { toast.error("Failed"); }
     };
 
-    const handleDeleteCategory = async (id: string) => {
-        // Pre-check on the frontend
-        const folderInvestments = investments.filter(inv => {
-            const catId = typeof inv.categoryId === 'string' ? inv.categoryId : inv.categoryId?.id;
-            return catId === id;
-        });
-        const hasTransactions = folderInvestments.some(inv => inv.transactions && inv.transactions.length > 0);
-
-        if (hasTransactions) {
-            toast.error("Cannot delete folder because it contains transaction history. Delete the transactions first.");
-            return;
-        }
-
-        if (!confirm("Are you sure? This will delete this category and any empty assets inside it.")) return;
+    const deleteCategory = async (id: string) => {
         try {
             const res = await fetch(`/api/investments/categories/${id}`, { method: "DELETE" });
             const data = await res.json();
-            
+
             if (res.ok) {
                 setCategories(categories.filter(c => c.id !== id));
                 setInvestments(investments.filter(inv => {
@@ -128,6 +115,49 @@ export default function InvestmentsPage() {
                 toast.error(data.error || "Failed to delete category");
             }
         } catch { toast.error("Failed to delete category"); }
+    };
+
+    const handleDeleteCategory = (id: string) => {
+        // Pre-check on the frontend
+        const folderInvestments = investments.filter(inv => {
+            const catId = typeof inv.categoryId === 'string' ? inv.categoryId : inv.categoryId?.id;
+            return catId === id;
+        });
+        const hasTransactions = folderInvestments.some(inv => inv.transactions && inv.transactions.length > 0);
+
+        if (hasTransactions) {
+            toast.error("Cannot delete folder because it contains transaction history. Delete the transactions first.");
+            return;
+        }
+
+        toast((t) => (
+            <div className="flex flex-col gap-3 min-w-[200px]">
+                <p className="text-sm font-medium text-[#ededed]">
+                    Delete this category?
+                    <span className="block text-xs text-[#888888] font-normal mt-1 italic">This will also remove any empty assets inside it.</span>
+                </p>
+                <div className="flex justify-end gap-2 border-t border-[#2d2d2d] pt-2">
+                    <button
+                        onClick={() => toast.dismiss(t.id)}
+                        className="px-2 py-1 text-xs text-[#888888] hover:text-[#ededed] cursor-pointer"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        onClick={() => {
+                            deleteCategory(id);
+                            toast.dismiss(t.id);
+                        }}
+                        className="px-2 py-1 text-xs bg-red-500/10 text-red-500 border border-red-500/20 rounded hover:bg-red-500 hover:text-white transition-all cursor-pointer font-medium"
+                    >
+                        Delete
+                    </button>
+                </div>
+            </div>
+        ), {
+            duration: 6000,
+            position: 'top-center'
+        });
     };
 
     const handleAddInvestment = async (catId: string) => {
@@ -149,8 +179,7 @@ export default function InvestmentsPage() {
         } catch { toast.error("Failed to add asset"); }
     };
 
-    const handleDeleteInvestment = async (id: string) => {
-        if (!confirm("Are you sure you want to delete this asset?")) return;
+    const deleteInvestment = async (id: string) => {
         try {
             const res = await fetch(`/api/investments/${id}`, { method: "DELETE" });
             if (res.ok) {
@@ -158,6 +187,36 @@ export default function InvestmentsPage() {
                 toast.success("Asset deleted");
             }
         } catch { toast.error("Failed"); }
+    };
+
+    const handleDeleteInvestment = (id: string) => {
+        toast((t) => (
+            <div className="flex flex-col gap-3 min-w-[200px]">
+                <p className="text-sm font-medium text-[#ededed]">
+                    Delete this asset?
+                </p>
+                <div className="flex justify-end gap-2 border-t border-[#2d2d2d] pt-2">
+                    <button
+                        onClick={() => toast.dismiss(t.id)}
+                        className="px-2 py-1 text-xs text-[#888888] hover:text-[#ededed] cursor-pointer"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        onClick={() => {
+                            deleteInvestment(id);
+                            toast.dismiss(t.id);
+                        }}
+                        className="px-2 py-1 text-xs bg-red-500/10 text-red-500 border border-red-500/20 rounded hover:bg-red-500 hover:text-white transition-all cursor-pointer font-medium"
+                    >
+                        Delete
+                    </button>
+                </div>
+            </div>
+        ), {
+            duration: 6000,
+            position: 'top-center'
+        });
     };
 
     const handleAddTransaction = async (e: React.FormEvent) => {

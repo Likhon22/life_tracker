@@ -90,6 +90,8 @@ export function FinanceCharts() {
                             />
                             <Tooltip
                                 contentStyle={{ backgroundColor: '#111111', borderColor: '#2d2d2d', color: '#ededed', borderRadius: '12px', fontSize: '12px' }}
+                                labelStyle={{ color: '#888888', marginBottom: '4px' }}
+                                itemStyle={{ color: '#3b82f6' }}
                                 cursor={{ fill: 'rgba(255,255,255,0.03)' }}
                                 formatter={(v: any) => [`${v.toLocaleString()}`, "Spent"]}
                             />
@@ -136,6 +138,8 @@ export function FinanceCharts() {
                                 </Pie>
                                 <Tooltip
                                     contentStyle={{ backgroundColor: '#111111', borderColor: '#2d2d2d', color: '#ededed', borderRadius: '12px', fontSize: '12px' }}
+                                    labelStyle={{ color: '#888888', marginBottom: '4px' }}
+                                    itemStyle={{ color: '#ededed' }}
                                     formatter={(v: any) => `${v.toLocaleString()}`}
                                 />
                                 <Legend
