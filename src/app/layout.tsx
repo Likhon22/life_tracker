@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { Sidebar } from "@/components/Sidebar";
-import { HabitProvider } from "@/components/HabitProvider";
-import AuthProvider from "@/components/AuthProvider";
+import { Sidebar } from "@/components/layout/Sidebar";
+import { HabitProvider } from "@/components/habits/HabitProvider";
+import AuthProvider from "@/components/auth/AuthProvider";
+import { QueryProvider } from "@/components/providers/QueryProvider";
 import { Toaster } from "react-hot-toast";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -65,7 +66,7 @@ export const viewport = {
   maximumScale: 1,
 };
 
-import { BottomNav } from "@/components/BottomNav";
+import { BottomNav } from "@/components/layout/BottomNav";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
@@ -82,26 +83,28 @@ export default async function RootLayout({
         className={`${inter.className} bg-[#111111] text-[#ededed] min-h-screen flex antialiased`}
         suppressHydrationWarning
       >
-        <AuthProvider>
-          <Toaster
-            position="top-center"
-            toastOptions={{
-              duration: 3000,
-              style: {
-                background: '#191919',
-                color: '#ededed',
-                border: '1px solid #2d2d2d',
-              },
-            }}
-          />
-          {session && <Sidebar />}
-          <main className="flex-1 flex flex-col h-screen overflow-hidden pb-20 md:pb-0">
-            <HabitProvider>
-              {children}
-            </HabitProvider>
-          </main>
-          {session && <BottomNav />}
-        </AuthProvider>
+        <QueryProvider>
+          <AuthProvider>
+            <Toaster
+              position="top-center"
+              toastOptions={{
+                duration: 3000,
+                style: {
+                  background: '#191919',
+                  color: '#ededed',
+                  border: '1px solid #2d2d2d',
+                },
+              }}
+            />
+            {session && <Sidebar />}
+            <main className="flex-1 flex flex-col h-screen overflow-hidden pb-20 md:pb-0">
+              <HabitProvider>
+                {children}
+              </HabitProvider>
+            </main>
+            {session && <BottomNav />}
+          </AuthProvider>
+        </QueryProvider>
       </body>
     </html>
   );

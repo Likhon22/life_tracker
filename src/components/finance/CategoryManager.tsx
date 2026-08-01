@@ -1,6 +1,6 @@
 "use client";
 
-import { useFinance, COMMON_ICONS, Category } from "@/components/FinanceProvider";
+import { useFinance, COMMON_ICONS, Category } from "./FinanceProvider";
 import { useState } from "react";
 import * as Icons from "lucide-react";
 import { Plus, Trash2, Edit2, Check, X, Search, LayoutGrid } from "lucide-react";

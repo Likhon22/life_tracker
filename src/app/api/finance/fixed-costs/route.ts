@@ -22,8 +22,6 @@ export async function GET(request: Request) {
         const fixedCosts = await FinanceFixedCost.find({ userId: session.user.id, month });
 
         return NextResponse.json(fixedCosts);
-
-        return NextResponse.json(fixedCosts);
     } catch (error) {
         console.error("Failed to fetch fixed costs:", error);
         return NextResponse.json({ error: "Failed to fetch fixed costs" }, { status: 500 });
@@ -55,10 +53,4 @@ export async function POST(request: Request) {
         console.error("Failed to create fixed cost:", error);
         return NextResponse.json({ error: "Failed to create fixed cost" }, { status: 500 });
     }
-}
-
-export async function PUT(request: Request) {
-    // We can handle delete/update via a similar pattern as expenses or just a simpler update if we have the ID
-    // For simplicity, let's assume we pass ID in the body for Fixed Costs or handle via a dynamic route if needed.
-    // Actually, I'll add the [id] dynamic route for Fixed Costs too to be consistent.
 }

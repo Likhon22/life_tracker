@@ -1,6 +1,6 @@
 "use client";
 
-import { useFinance, Expense } from "@/components/FinanceProvider";
+import { useFinance, Expense } from "./FinanceProvider";
 import { format, parseISO } from "date-fns";
 import * as Icons from "lucide-react";
 import { Trash2, Edit2, Calendar, MoreHorizontal, Check, X } from "lucide-react";

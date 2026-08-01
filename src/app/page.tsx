@@ -8,11 +8,9 @@ import {
     Wallet,
     ChevronRight,
     TrendingUp,
-    FileCode,
-    Sparkles,
     Landmark
 } from "lucide-react";
-import { ModulePage } from "@/components/ModulePage";
+import { ModulePage } from "@/components/layout/ModulePage";
 
 export default function Dashboard() {
     const { data: session } = useSession();
@@ -60,22 +58,6 @@ export default function Dashboard() {
                             <div className="w-1.5 h-1.5 rounded-full bg-[#2d2d2d]" />
                             <span className="truncate opacity-40">Ready for your next goal?</span>
                         </div>
-                    </div>
-                </DashboardCard>
-
-                {/* Resume Architect Preview */}
-                <DashboardCard
-                    title="Resume Architect"
-                    icon={<FileCode className="w-5 h-5 text-blue-400" />}
-                    href="/resumes"
-                    subtitle="Build your career mission"
-                >
-                    <div className="flex flex-col gap-2">
-                        <div className="flex items-center gap-2">
-                            <Sparkles className="w-3 h-3 text-blue-400" />
-                            <span className="text-[10px] font-bold text-blue-400 uppercase tracking-widest">Gemini AI Active</span>
-                        </div>
-                        <p className="text-xs text-[#ededed] mt-1">Pool your CV versions and architect high-impact LaTeX resumes.</p>
                     </div>
                 </DashboardCard>
 

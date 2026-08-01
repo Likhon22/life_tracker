@@ -1,47 +1,80 @@
 # Life Tracker 🚀
 
-A premium, all-in-one life tracking application built with **Next.js 16**, **TypeScript**, and **MongoDB**. Designed with a sleek, Notion-style aesthetic, this tool helps you stay on top of your habits and goals while providing deep insights into your performance.
+A premium, all-in-one life tracking application built with **Next.js 16**, **TypeScript**, and **MongoDB**. Designed with a sleek, Notion-style aesthetic, this tool helps you stay on top of your habits, goals, finances, and investments in one place.
+
+For deeper reference docs, see:
+- [`docs/API.md`](docs/API.md) — every backend route, model, and auth/rate-limit rule
+- [`docs/FRONTEND.md`](docs/FRONTEND.md) — folder structure, component tree, state/caching strategy
+- [`docs/PERFORMANCE.md`](docs/PERFORMANCE.md) — issues found, fixes applied, and what's still recommended
 
 ## ✨ Current Features
 
-### 📅 Advanced Habit Tracking
-- **Interactive Habit Grid**: Toggle daily habits with a single click.
-- **Drag-and-Drop Reordering**: Organize your habits exactly how you want them using a smooth sortable interface (powered by `@dnd-kit`).
-- **Data Persistence**: Your habit order and completion history are saved securely in MongoDB.
-- **Real-time Feedback**: Beautiful dark-themed toast notifications for every action (success, errors, and confirmation).
+### 📅 Habit Tracking
+- Interactive daily habit grid with drag-and-drop reordering (`@dnd-kit`)
+- Monthly history view, per-habit and daily completion-rate analytics
+- Optimistic UI with automatic rollback on failure
+
+### 🎯 Daily Goals
+- One-off, date-scoped to-do list separate from recurring habits
+- 7-day + tomorrow navigation strip, automatic rollover of incomplete goals into "today"
+
+### 💰 Finance Center
+- Monthly budgets, categorized expenses, and recurring fixed costs
+- One-click "import fixed costs from previous month"
+- Daily spending bar chart + category breakdown pie chart (Recharts)
+- Inline calculator syntax in amount fields (e.g. `5600+100`)
+
+### 📈 Investment Tracker
+- Category "folders" (crypto, stocks, business, etc.) containing multiple assets
+- Per-asset invest/withdraw transaction history with running P&L
+- Portfolio-wide and per-category totals
 
 ### 🔒 Secure Multi-User System
-- **Google Authentication**: Seamless login via Google (NextAuth.js).
-- **Data Isolation**: Every user gets their own private workspace. Your habits and records are filtered strictly by your unique User ID.
-- **Protected Routes**: Middleware and server-side checks ensure only you can access your data.
-
-### 📊 Deep Analytics
-- **Performance Charts**: Visualize your consistency over time with Recharts.
-- **Completion Rates**: Automated calculations for daily and individual habit success rates.
-- **Responsive Sidebar**: Switch between focus views and analytics effortlessly.
+- Google Authentication (NextAuth.js)
+- Every record is scoped to the signed-in user's ID — no cross-user data leakage
+- Server-side session checks on every API route, independent of UI-level gating
 
 ---
 
 ## 🛠️ Tech Stack
 
-- **Frontend**: Next.js 16 (Turbopack), React 19, Tailwind CSS v4.
-- **State Management**: React Context + TanStack Query (React Query).
-- **Backend**: Next.js API Routes (App Router), Mongoose.
-- **Database**: MongoDB Atlas.
-- **Authentication**: NextAuth.js (Google OAuth).
-- **Icons & UI**: Lucide React, Glassmorphism, Premium Dark Mode.
+- **Frontend**: Next.js 16 (Turbopack), React 19, Tailwind CSS v4
+- **Data fetching / caching**: TanStack Query (`useQuery`/`useMutation`, optimistic updates, cache invalidation)
+- **Backend**: Next.js API Routes (App Router), Mongoose
+- **Database**: MongoDB Atlas
+- **Authentication**: NextAuth.js (Google OAuth)
+- **Charts**: Recharts
+- **Drag & drop**: `@dnd-kit`
+- **Icons & UI**: Lucide React, small internal UI primitive kit (`src/components/ui`)
+
+---
+
+## 📁 Project Structure
+
+```
+src/
+  app/                  # Next.js App Router — pages + API routes
+    api/                # habits, records, goals, finance/*, investments/*, auth
+    habits|goals|finance|investments/page.tsx
+  components/
+    ui/                 # Button, IconButton, Input, Select, Card — shared primitives
+    layout/             # Sidebar, BottomNav, ModulePage
+    auth/                # AuthProvider, AuthScreen
+    providers/          # QueryProvider (TanStack Query root)
+    habits/ goals/ finance/ investments/   # feature-scoped components + data hooks
+  lib/                  # mongodb, rateLimit, utils, confirmToast
+  models/                # single Mongoose schema file (all collections)
+```
+
+Each feature folder (`habits/`, `goals/`, `finance/`, `investments/`) owns its own data-fetching logic — either a Provider (Context + React Query) for state shared across many components, or a `useX` hook for a single page. See [`docs/FRONTEND.md`](docs/FRONTEND.md) for the full breakdown.
 
 ---
 
 ## 🗺️ Roadmap (Upcoming Features)
 
-The goal of Life Tracker is to become your central hub for personal growth. Coming soon:
-
-- [ ] **💰 Finance Management**: track daily expenses, set budgets, and visualize your spending habits.
-- [ ] **📝 Daily To-Do List**: A dedicated task manager for high-priority items that aren't recurring habits.
-- [ ] **🎯 Goal Setting**: Define weekly and monthly milestones with progress bars.
-- [ ] **🔔 Reminders**: Browser/Mobile notifications to keep you consistent.
-- [ ] **📈 Advanced Export**: Download your data in PDF or CSV format.
+- [ ] **🔔 Reminders**: Browser/mobile notifications to keep you consistent
+- [ ] **📤 Advanced Export**: Download data as PDF or CSV
+- [ ] **📊 Investment performance charts**: portfolio value over time
 
 ---
 
@@ -49,7 +82,8 @@ The goal of Life Tracker is to become your central hub for personal growth. Comi
 
 ### 1. Prerequisites
 - Node.js 18+
-- MongoDB Database
+- MongoDB database
+- Google OAuth credentials (for sign-in)
 
 ### 2. Installation
 ```bash
@@ -72,6 +106,13 @@ NEXTAUTH_URL=http://localhost:3000
 ```bash
 npm run dev
 ```
+
+### 5. Useful scripts
+```bash
+npm run build   # production build
+npm run lint    # eslint
+```
+`scripts/` also has one-off maintenance scripts (`fix-db.ts`, `wipe.ts`, `seed-user-habits.ts`, `cleanup-user-data.ts`) run via `npx tsx scripts/<name>.ts`.
 
 ---
 

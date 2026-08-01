@@ -1,6 +1,6 @@
 "use client";
 
-import { useFinance } from "@/components/FinanceProvider";
+import { useFinance } from "./FinanceProvider";
 import { useMemo } from "react";
 import {
     BarChart,

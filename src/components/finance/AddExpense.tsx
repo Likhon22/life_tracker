@@ -1,6 +1,6 @@
 "use client";
 
-import { useFinance } from "@/components/FinanceProvider";
+import { useFinance } from "./FinanceProvider";
 import { useState } from "react";
 import { format } from "date-fns";
 import * as Icons from "lucide-react";

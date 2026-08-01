@@ -1,11 +1,11 @@
 "use client";
 
 import { useSession } from "next-auth/react";
-import { HabitList } from "@/components/HabitList";
-import { AnalyticsSidebar } from "@/components/AnalyticsSidebar";
-import { PerformanceChart } from "@/components/PerformanceChart";
+import { HabitList } from "@/components/habits/HabitList";
+import { AnalyticsSidebar } from "@/components/habits/AnalyticsSidebar";
+import { PerformanceChart } from "@/components/habits/PerformanceChart";
 import { CheckSquare } from "lucide-react";
-import { ModulePage } from "@/components/ModulePage";
+import { ModulePage } from "@/components/layout/ModulePage";
 
 export default function HabitsPage() {
   const { data: session } = useSession();

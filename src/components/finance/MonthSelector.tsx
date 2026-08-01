@@ -1,6 +1,6 @@
 "use client";
 
-import { useFinance } from "@/components/FinanceProvider";
+import { useFinance } from "./FinanceProvider";
 import { ChevronLeft, ChevronRight, Calendar } from "lucide-react";
 import { format, addMonths, subMonths, parse } from "date-fns";
 

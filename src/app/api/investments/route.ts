@@ -19,9 +19,20 @@ export async function GET(request: Request) {
 
         const investments = await Investment.find(filter).populate("categoryId").sort({ createdAt: -1 });
 
-        // Aggregate transactions for each investment
-        const result = await Promise.all(investments.map(async (inv) => {
-            const transactions = await InvestmentTransaction.find({ investmentId: inv._id }).sort({ date: -1 });
+        // Single query for all transactions across every investment, avoiding an N+1 fetch loop
+        const investmentIds = investments.map(inv => inv._id);
+        const allTransactions = await InvestmentTransaction.find({ investmentId: { $in: investmentIds } }).sort({ date: -1 });
+
+        const transactionsByInvestment = new Map<string, typeof allTransactions>();
+        for (const tx of allTransactions) {
+            const key = tx.investmentId.toString();
+            const bucket = transactionsByInvestment.get(key);
+            if (bucket) bucket.push(tx);
+            else transactionsByInvestment.set(key, [tx]);
+        }
+
+        const result = investments.map((inv) => {
+            const transactions = transactionsByInvestment.get(inv._id.toString()) || [];
             const totalInvested = transactions.filter(t => t.type === 'invest').reduce((sum: number, t: any) => sum + t.amount, 0);
             const totalWithdrawn = transactions.filter(t => t.type === 'withdraw').reduce((sum: number, t: any) => sum + t.amount, 0);
 
@@ -40,7 +51,7 @@ export async function GET(request: Request) {
                 firstEntryDate,
                 latestEntryDate
             };
-        }));
+        });
 
         return NextResponse.json(result);
     } catch (error) {

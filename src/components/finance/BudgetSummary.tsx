@@ -1,6 +1,6 @@
 "use client";
 
-import { useFinance } from "@/components/FinanceProvider";
+import { useFinance } from "./FinanceProvider";
 import { TrendingUp, Wallet, ArrowDownCircle, ArrowUpCircle, ShoppingCart, CalendarDays, Edit2, Check, X } from "lucide-react";
 import { cn, evaluateMath } from "@/lib/utils";
 import { useState, useMemo } from "react";

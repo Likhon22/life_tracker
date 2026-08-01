@@ -1,9 +1,8 @@
 "use client";
 
-import { useSession } from "next-auth/react";
-import { DailyGoals } from "@/components/DailyGoals";
+import { DailyGoals } from "@/components/goals/DailyGoals";
 import { Target } from "lucide-react";
-import { ModulePage } from "@/components/ModulePage";
+import { ModulePage } from "@/components/layout/ModulePage";
 
 export default function GoalsPage() {
     return (

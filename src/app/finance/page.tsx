@@ -1,7 +1,7 @@
 "use client";
 
 import { useSession, signIn } from "next-auth/react";
-import { FinanceProvider } from "@/components/FinanceProvider";
+import { FinanceProvider } from "@/components/finance/FinanceProvider";
 import { BudgetSummary } from "@/components/finance/BudgetSummary";
 import { AddExpense } from "@/components/finance/AddExpense";
 import { FixedCosts } from "@/components/finance/FixedCosts";
@@ -9,7 +9,7 @@ import { FinanceCharts } from "@/components/finance/FinanceCharts";
 import { MonthSelector } from "@/components/finance/MonthSelector";
 import { RecentExpenses } from "@/components/finance/RecentExpenses";
 import { Wallet } from "lucide-react";
-import { ModulePage } from "@/components/ModulePage";
+import { ModulePage } from "@/components/layout/ModulePage";
 
 export default function FinancePage() {
     const { data: session, status } = useSession();
