@@ -2,7 +2,7 @@ import { useHabits } from "./HabitProvider";
 import { format, isToday, isYesterday, startOfMonth, eachDayOfInterval } from "date-fns";
 import { Check, Edit2, Trash2, Plus, X, GripVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
     DndContext,
     closestCenter,
@@ -21,15 +21,20 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { confirmToast } from "@/lib/confirmToast";
+import { Select } from "@/components/ui/Select";
+import type { HabitCategory } from "./HabitProvider";
 
 interface HabitItemProps {
     habit: any;
     todayStr: string;
     isCompleted: boolean;
+    categories: HabitCategory[];
     editingId: string | null;
     editName: string;
+    editCategoryId: string;
     setEditingId: (id: string | null) => void;
     setEditName: (name: string) => void;
+    setEditCategoryId: (id: string) => void;
     handleEdit: (id: string) => void;
     toggleHabit: (date: string, id: string) => void;
     removeHabit: (id: string) => void;
@@ -39,10 +44,13 @@ function SortableHabitItem({
     habit,
     todayStr,
     isCompleted,
+    categories,
     editingId,
     editName,
+    editCategoryId,
     setEditingId,
     setEditName,
+    setEditCategoryId,
     handleEdit,
     toggleHabit,
     removeHabit,
@@ -64,6 +72,11 @@ function SortableHabitItem({
     };
 
     const isEditing = editingId === habit.id;
+
+    const editInputRef = useRef<HTMLInputElement>(null);
+    useEffect(() => {
+        if (isEditing) editInputRef.current?.focus({ preventScroll: true });
+    }, [isEditing]);
 
     const confirmDelete = () => {
         confirmToast({
@@ -94,26 +107,37 @@ function SortableHabitItem({
                 )}
 
                 {isEditing ? (
-                    <div className="flex items-center gap-2 w-full">
-                        <input
-                            autoFocus
-                            type="text"
-                            value={editName}
-                            onChange={(e) => setEditName(e.target.value)}
-                            onKeyDown={(e) => {
-                                if (e.key === "Enter") handleEdit(habit.id);
-                                if (e.key === "Escape") setEditingId(null);
-                            }}
-                            className="flex-1 bg-transparent border-b border-[#555555] text-sm text-[#ededed] focus:outline-none focus:border-blue-500 py-0.5"
-                        />
-                        <div className="flex items-center gap-1">
-                            <button onClick={() => handleEdit(habit.id)} className="text-blue-500 hover:text-blue-400 p-1 cursor-pointer">
-                                <Check className="w-3.5 h-3.5" />
-                            </button>
-                            <button onClick={() => setEditingId(null)} className="text-[#888888] hover:text-[#aaaaaa] p-1 cursor-pointer">
-                                <X className="w-3.5 h-3.5" />
-                            </button>
+                    <div className="flex flex-col gap-1.5 w-full py-0.5">
+                        <div className="flex items-center gap-2">
+                            <input
+                                ref={editInputRef}
+                                type="text"
+                                value={editName}
+                                onChange={(e) => setEditName(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === "Enter") handleEdit(habit.id);
+                                    if (e.key === "Escape") setEditingId(null);
+                                }}
+                                className="flex-1 bg-transparent border-b border-[#555555] text-sm text-[#ededed] focus:outline-none focus:border-blue-500 py-0.5"
+                            />
+                            <div className="flex items-center gap-1">
+                                <button onClick={() => handleEdit(habit.id)} className="text-blue-500 hover:text-blue-400 p-1 cursor-pointer">
+                                    <Check className="w-3.5 h-3.5" />
+                                </button>
+                                <button onClick={() => setEditingId(null)} className="text-[#888888] hover:text-[#aaaaaa] p-1 cursor-pointer">
+                                    <X className="w-3.5 h-3.5" />
+                                </button>
+                            </div>
                         </div>
+                        <Select
+                            value={editCategoryId}
+                            onChange={(e) => setEditCategoryId(e.target.value)}
+                            className="!py-1 !text-xs"
+                        >
+                            {categories.map((cat) => (
+                                <option key={cat.id} value={cat.id}>{cat.name}</option>
+                            ))}
+                        </Select>
                     </div>
                 ) : (
                     <>
@@ -150,6 +174,7 @@ function SortableHabitItem({
                                     e.stopPropagation();
                                     setEditingId(habit.id);
                                     setEditName(habit.name);
+                                    setEditCategoryId(habit.categoryId);
                                 }}
                                 className="text-[#888888] hover:text-[#ededed] p-1 rounded transition-colors cursor-pointer"
                             >
@@ -177,6 +202,7 @@ export function HabitList() {
     const {
         habits,
         records,
+        categories,
         toggleHabit,
         getDailyCompletionRate,
         addHabit,
@@ -191,9 +217,15 @@ export function HabitList() {
 
     const [isAdding, setIsAdding] = useState(false);
     const [newName, setNewName] = useState("");
+    const [newCategoryId, setNewCategoryId] = useState("");
+    const addInputRef = useRef<HTMLInputElement>(null);
+    useEffect(() => {
+        if (isAdding) addInputRef.current?.focus({ preventScroll: true });
+    }, [isAdding]);
 
     const [editingId, setEditingId] = useState<string | null>(null);
     const [editName, setEditName] = useState("");
+    const [editCategoryId, setEditCategoryId] = useState("");
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -207,15 +239,15 @@ export function HabitList() {
     );
 
     const handleAdd = async () => {
-        if (!newName.trim()) return;
-        await addHabit(newName.trim());
+        if (!newName.trim() || !newCategoryId) return;
+        await addHabit(newName.trim(), newCategoryId);
         setNewName("");
         setIsAdding(false);
     };
 
     const handleEdit = async (id: string) => {
-        if (!editName.trim()) return;
-        await editHabit(id, editName.trim());
+        if (!editName.trim() || !editCategoryId) return;
+        await editHabit(id, editName.trim(), editCategoryId);
         setEditingId(null);
     };
 
@@ -284,10 +316,13 @@ export function HabitList() {
                                             habit={habit}
                                             todayStr={dateStr}
                                             isCompleted={records[dateStr]?.includes(habit.id) || false}
+                                            categories={categories}
                                             editingId={editingId}
                                             editName={editName}
+                                            editCategoryId={editCategoryId}
                                             setEditingId={setEditingId}
                                             setEditName={setEditName}
+                                            setEditCategoryId={setEditCategoryId}
                                             handleEdit={handleEdit}
                                             toggleHabit={toggleHabit}
                                             removeHabit={removeHabit}
@@ -300,34 +335,50 @@ export function HabitList() {
                             {isCurrentToday && (
                                 <>
                                     {isAdding ? (
-                                        <div className="flex items-center gap-2 px-2 py-1.5 mt-2">
-                                            <input
-                                                autoFocus
-                                                type="text"
-                                                placeholder="New habit name..."
-                                                value={newName}
-                                                onChange={(e) => setNewName(e.target.value)}
-                                                onKeyDown={(e) => {
-                                                    if (e.key === "Enter") handleAdd();
-                                                    if (e.key === "Escape") {
-                                                        setIsAdding(false);
-                                                        setNewName("");
-                                                    }
-                                                }}
-                                                className="flex-1 bg-transparent border-b border-[#555555] text-sm text-[#ededed] focus:outline-none focus:border-blue-500 py-0.5"
-                                            />
-                                            <div className="flex items-center gap-1">
-                                                <button onClick={handleAdd} className="text-blue-500 hover:text-blue-400 p-1 cursor-pointer">
-                                                    <Check className="w-3.5 h-3.5" />
-                                                </button>
-                                                <button onClick={() => { setIsAdding(false); setNewName(""); }} className="text-[#888888] hover:text-[#aaaaaa] p-1 cursor-pointer">
-                                                    <X className="w-3.5 h-3.5" />
-                                                </button>
+                                        <div className="flex flex-col gap-1.5 px-2 py-1.5 mt-2">
+                                            <div className="flex items-center gap-2">
+                                                <input
+                                                    ref={addInputRef}
+                                                    type="text"
+                                                    placeholder="New habit name..."
+                                                    value={newName}
+                                                    onChange={(e) => setNewName(e.target.value)}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === "Enter") handleAdd();
+                                                        if (e.key === "Escape") {
+                                                            setIsAdding(false);
+                                                            setNewName("");
+                                                        }
+                                                    }}
+                                                    className="flex-1 bg-transparent border-b border-[#555555] text-sm text-[#ededed] focus:outline-none focus:border-blue-500 py-0.5"
+                                                />
+                                                <div className="flex items-center gap-1">
+                                                    <button onClick={handleAdd} className="text-blue-500 hover:text-blue-400 p-1 cursor-pointer">
+                                                        <Check className="w-3.5 h-3.5" />
+                                                    </button>
+                                                    <button onClick={() => { setIsAdding(false); setNewName(""); }} className="text-[#888888] hover:text-[#aaaaaa] p-1 cursor-pointer">
+                                                        <X className="w-3.5 h-3.5" />
+                                                    </button>
+                                                </div>
                                             </div>
+                                            <Select
+                                                value={newCategoryId}
+                                                onChange={(e) => setNewCategoryId(e.target.value)}
+                                                className="!py-1 !text-xs"
+                                            >
+                                                {categories.map((cat) => (
+                                                    <option key={cat.id} value={cat.id}>{cat.name}</option>
+                                                ))}
+                                            </Select>
                                         </div>
                                     ) : (
                                         <button
-                                            onClick={() => setIsAdding(true)}
+                                            onClick={() => {
+                                                setIsAdding(true);
+                                                setNewCategoryId(
+                                                    categories.find((c) => c.name === "Productivity")?.id ?? categories[0]?.id ?? ""
+                                                );
+                                            }}
                                             className="flex items-center gap-2 px-2 py-2 mt-2 text-sm text-[#888888] hover:text-[#ededed] transition-colors rounded-md hover:bg-[#2d2d2d] w-full text-left cursor-pointer"
                                         >
                                             <Plus className="w-3.5 h-3.5" /> Add Habit

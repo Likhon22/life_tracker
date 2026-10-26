@@ -12,7 +12,7 @@ export async function PUT(request: Request, props: { params: Promise<{ id: strin
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        const { name } = await request.json();
+        const { name, categoryId } = await request.json();
 
         if (!name) {
             return NextResponse.json({ error: "Habit name is required" }, { status: 400 });
@@ -31,9 +31,12 @@ export async function PUT(request: Request, props: { params: Promise<{ id: strin
             return NextResponse.json({ error: "A habit with this name already exists" }, { status: 400 });
         }
 
+        const update: { name: string; categoryId?: string } = { name: name.trim() };
+        if (categoryId) update.categoryId = categoryId;
+
         const updatedHabit = await Habit.findOneAndUpdate(
             { _id: params.id, userId: session.user.id },
-            { name: name.trim() },
+            update,
             { returnDocument: 'after' }
         );
 

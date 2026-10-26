@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format, isToday, isTomorrow, parseISO, addDays, subDays } from "date-fns";
 import { CheckCircle2, Circle, Plus, Trash2, Target, History } from "lucide-react";
@@ -30,6 +30,10 @@ export function DailyGoals({ selectedDate }: DailyGoalsProps) {
     const [activeDate, setActiveDate] = useState(selectedDate || todayStr);
     const [newGoal, setNewGoal] = useState("");
     const [isAdding, setIsAdding] = useState(false);
+    const goalInputRef = useRef<HTMLInputElement>(null);
+    useEffect(() => {
+        if (isAdding) goalInputRef.current?.focus({ preventScroll: true });
+    }, [isAdding]);
 
     const queryClient = useQueryClient();
 
@@ -245,7 +249,7 @@ export function DailyGoals({ selectedDate }: DailyGoalsProps) {
                     <form onSubmit={handleAddGoal} className="mb-6 animate-in fade-in slide-in-from-top-2 duration-300">
                         <div className="relative group">
                             <input
-                                autoFocus
+                                ref={goalInputRef}
                                 type="text"
                                 placeholder="State your objective..."
                                 value={newGoal}

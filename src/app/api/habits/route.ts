@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import connectToDatabase from "@/lib/mongodb";
 import { Habit } from "@/models";
+import { ensureHabitCategories } from "@/lib/habitCategories";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
@@ -16,10 +17,15 @@ export async function GET() {
 
         // Seed default habits if the database is completely empty FOR THIS USER
         if (habits.length === 0) {
+            const categories = await ensureHabitCategories(session.user.id);
+            const productivity = categories.find((c) => c.name === "Productivity") ?? categories[0];
+            const health = categories.find((c) => c.name === "Health") ?? categories[0];
+            const personalGrowth = categories.find((c) => c.name === "Personal Growth") ?? categories[0];
+
             const defaultHabits = [
-                { name: "To Do list", userId: session.user.id, order: 0 },
-                { name: "Exercise", userId: session.user.id, order: 1 },
-                { name: "Read", userId: session.user.id, order: 2 },
+                { name: "To Do list", userId: session.user.id, order: 0, categoryId: productivity._id },
+                { name: "Exercise", userId: session.user.id, order: 1, categoryId: health._id },
+                { name: "Read", userId: session.user.id, order: 2, categoryId: personalGrowth._id },
             ];
 
             await Habit.insertMany(defaultHabits);
@@ -43,11 +49,18 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        const { name } = await request.json();
+        const { name, categoryId } = await request.json();
 
         if (!name) {
             return NextResponse.json(
                 { error: "Habit name is required" },
+                { status: 400 }
+            );
+        }
+
+        if (!categoryId) {
+            return NextResponse.json(
+                { error: "Category is required" },
                 { status: 400 }
             );
         }
@@ -70,7 +83,8 @@ export async function POST(request: Request) {
         const newHabit = await Habit.create({
             name: name.trim(),
             userId: session.user.id,
-            order: habitCount
+            order: habitCount,
+            categoryId
         });
 
         return NextResponse.json(newHabit, { status: 201 });

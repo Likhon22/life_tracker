@@ -3,13 +3,17 @@
 import { useFinance } from "./FinanceProvider";
 import { TrendingUp, Wallet, ArrowDownCircle, ArrowUpCircle, ShoppingCart, CalendarDays, Edit2, Check, X } from "lucide-react";
 import { cn, evaluateMath } from "@/lib/utils";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { getDate, getDaysInMonth } from "date-fns";
 
 export function BudgetSummary() {
     const { budget, totalSpent, totalDailyExpenses, selectedMonth, isCurrentMonth, remainingBudget, updateBudget, isFutureMonth } = useFinance();
     const [isEditing, setIsEditing] = useState(false);
     const [newBudget, setNewBudget] = useState(budget.toString());
+    const budgetInputRef = useRef<HTMLInputElement>(null);
+    useEffect(() => {
+        if (isEditing) budgetInputRef.current?.focus({ preventScroll: true });
+    }, [isEditing]);
 
     const dailyExpenseAvg = useMemo(() => {
         const [year, month] = selectedMonth.split("-").map(Number);
@@ -72,7 +76,7 @@ export function BudgetSummary() {
                                 value={newBudget}
                                 onChange={(e) => setNewBudget(e.target.value)}
                                 className="bg-white/5 border border-white/10 rounded-lg px-3 py-1 text-2xl font-bold text-white outline-none focus:border-blue-500 w-full"
-                                autoFocus
+                                ref={budgetInputRef}
                                 onKeyDown={(e) => e.key === 'Enter' && handleSave()}
                             />
                         ) : (

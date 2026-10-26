@@ -8,6 +8,13 @@ import { toast } from "react-hot-toast";
 export type Habit = {
     id: string;
     name: string;
+    categoryId: string;
+};
+
+export type HabitCategory = {
+    id: string;
+    name: string;
+    icon: string;
 };
 
 export type DailyRecord = {
@@ -17,13 +24,18 @@ export type DailyRecord = {
 type HabitContextType = {
     habits: Habit[];
     records: DailyRecord;
+    categories: HabitCategory[];
     toggleHabit: (date: string, habitId: string) => void;
     getHabitCompletionRate: (habitId: string, monthDate: Date) => number;
+    getCategoryCompletionRate: (categoryId: string, monthDate: Date) => number;
     getDailyCompletionRate: (date: string) => number;
-    addHabit: (name: string) => Promise<void>;
-    editHabit: (id: string, name: string) => Promise<void>;
+    addHabit: (name: string, categoryId: string) => Promise<void>;
+    editHabit: (id: string, name: string, categoryId: string) => Promise<void>;
     removeHabit: (id: string) => Promise<void>;
     reorderHabits: (newHabits: Habit[]) => Promise<void>;
+    addCategory: (name: string, icon: string) => Promise<void>;
+    updateCategory: (id: string, name: string, icon: string) => Promise<void>;
+    deleteCategory: (id: string) => Promise<void>;
     isLoading: boolean;
 };
 
@@ -48,8 +60,14 @@ export function HabitProvider({ children }: { children: React.ReactNode }) {
         queryFn: () => fetchJSON<DailyRecord>("/api/records"),
     });
 
+    const categoriesQuery = useQuery({
+        queryKey: ["habitCategories"],
+        queryFn: () => fetchJSON<HabitCategory[]>("/api/habits/categories"),
+    });
+
     const habits = habitsQuery.data ?? [];
     const records = recordsQuery.data ?? {};
+    const categories = categoriesQuery.data ?? [];
 
     // Toggle completion for a habit on a given date, with optimistic cache update
     const toggleHabitMutation = useMutation({
@@ -86,11 +104,11 @@ export function HabitProvider({ children }: { children: React.ReactNode }) {
     };
 
     const addHabitMutation = useMutation({
-        mutationFn: async (name: string) => {
+        mutationFn: async ({ name, categoryId }: { name: string; categoryId: string }) => {
             const res = await fetch("/api/habits", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ name }),
+                body: JSON.stringify({ name, categoryId }),
             });
             if (!res.ok) {
                 const data = await res.json();
@@ -105,27 +123,27 @@ export function HabitProvider({ children }: { children: React.ReactNode }) {
         onError: (error: Error) => toast.error(error.message),
     });
 
-    const addHabit = async (name: string) => {
-        await addHabitMutation.mutateAsync(name).catch(() => {});
+    const addHabit = async (name: string, categoryId: string) => {
+        await addHabitMutation.mutateAsync({ name, categoryId }).catch(() => {});
     };
 
     const editHabitMutation = useMutation({
-        mutationFn: async ({ id, name }: { id: string; name: string }) => {
+        mutationFn: async ({ id, name, categoryId }: { id: string; name: string; categoryId: string }) => {
             const res = await fetch(`/api/habits/${id}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ name }),
+                body: JSON.stringify({ name, categoryId }),
             });
             if (!res.ok) {
                 const data = await res.json();
                 throw new Error(data.error || "Failed to edit habit");
             }
         },
-        onMutate: async ({ id, name }) => {
+        onMutate: async ({ id, name, categoryId }) => {
             await queryClient.cancelQueries({ queryKey: ["habits"] });
             const previous = queryClient.getQueryData<Habit[]>(["habits"]);
             queryClient.setQueryData<Habit[]>(["habits"], (prev = []) =>
-                prev.map((h) => (h.id === id ? { ...h, name } : h))
+                prev.map((h) => (h.id === id ? { ...h, name, categoryId } : h))
             );
             return { previous };
         },
@@ -136,8 +154,77 @@ export function HabitProvider({ children }: { children: React.ReactNode }) {
         },
     });
 
-    const editHabit = async (id: string, name: string) => {
-        await editHabitMutation.mutateAsync({ id, name }).catch(() => {});
+    const editHabit = async (id: string, name: string, categoryId: string) => {
+        await editHabitMutation.mutateAsync({ id, name, categoryId }).catch(() => {});
+    };
+
+    const addCategoryMutation = useMutation({
+        mutationFn: async ({ name, icon }: { name: string; icon: string }) => {
+            const res = await fetch("/api/habits/categories", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name, icon }),
+            });
+            if (!res.ok) {
+                const data = await res.json();
+                throw new Error(data.error || "Failed to add category");
+            }
+            return res.json() as Promise<HabitCategory>;
+        },
+        onSuccess: (newCat) => {
+            queryClient.setQueryData<HabitCategory[]>(["habitCategories"], (prev = []) => [...prev, newCat]);
+            toast.success("Category added");
+        },
+        onError: (error: Error) => toast.error(error.message),
+    });
+    const addCategory = async (name: string, icon: string) => {
+        await addCategoryMutation.mutateAsync({ name, icon }).catch(() => {});
+    };
+
+    const updateCategoryMutation = useMutation({
+        mutationFn: async ({ id, name, icon }: { id: string; name: string; icon: string }) => {
+            const res = await fetch(`/api/habits/categories/${id}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name, icon }),
+            });
+            if (!res.ok) {
+                const data = await res.json();
+                throw new Error(data.error || "Failed to update category");
+            }
+            return res.json() as Promise<HabitCategory>;
+        },
+        onSuccess: (updated) => {
+            queryClient.setQueryData<HabitCategory[]>(["habitCategories"], (prev = []) =>
+                prev.map((c) => (c.id === updated.id ? updated : c))
+            );
+            toast.success("Category updated");
+        },
+        onError: (error: Error) => toast.error(error.message),
+    });
+    const updateCategory = async (id: string, name: string, icon: string) => {
+        await updateCategoryMutation.mutateAsync({ id, name, icon }).catch(() => {});
+    };
+
+    const deleteCategoryMutation = useMutation({
+        mutationFn: async (id: string) => {
+            const res = await fetch(`/api/habits/categories/${id}`, { method: "DELETE" });
+            if (!res.ok) {
+                const data = await res.json();
+                throw new Error(data.error || "Failed to delete category");
+            }
+            return id;
+        },
+        onSuccess: (id) => {
+            queryClient.setQueryData<HabitCategory[]>(["habitCategories"], (prev = []) =>
+                prev.filter((c) => c.id !== id)
+            );
+            toast.success("Category deleted");
+        },
+        onError: (error: Error) => toast.error(error.message),
+    });
+    const deleteCategory = async (id: string) => {
+        await deleteCategoryMutation.mutateAsync(id).catch(() => {});
     };
 
     const removeHabitMutation = useMutation({
@@ -221,6 +308,13 @@ export function HabitProvider({ children }: { children: React.ReactNode }) {
         return Math.round((completedDays / daysElapsed) * 100);
     };
 
+    const getCategoryCompletionRate = (categoryId: string, monthDate: Date) => {
+        const categoryHabits = habits.filter((h) => h.categoryId === categoryId);
+        if (categoryHabits.length === 0) return 0;
+        const total = categoryHabits.reduce((sum, h) => sum + getHabitCompletionRate(h.id, monthDate), 0);
+        return Math.round(total / categoryHabits.length);
+    };
+
     const getDailyCompletionRate = (date: string) => {
         if (habits.length === 0) return 0;
         const completed = records[date]?.length || 0;
@@ -231,14 +325,19 @@ export function HabitProvider({ children }: { children: React.ReactNode }) {
         <HabitContext.Provider value={{
             habits,
             records,
+            categories,
             toggleHabit,
             getHabitCompletionRate,
+            getCategoryCompletionRate,
             getDailyCompletionRate,
             addHabit,
             editHabit,
             removeHabit,
             reorderHabits,
-            isLoading: habitsQuery.isLoading || recordsQuery.isLoading
+            addCategory,
+            updateCategory,
+            deleteCategory,
+            isLoading: habitsQuery.isLoading || recordsQuery.isLoading || categoriesQuery.isLoading
         }}>
             {children}
         </HabitContext.Provider>

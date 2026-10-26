@@ -1,9 +1,26 @@
 import mongoose, { Schema } from "mongoose";
 
+export interface IHabitCategory {
+    userId: string;
+    name: string;
+    icon: string;
+}
+
+const HabitCategorySchema = new Schema({
+    userId: { type: String, required: true, index: true },
+    name: { type: String, required: true },
+    icon: { type: String, required: true }
+}, {
+    toJSON: { virtuals: true, versionKey: false, transform: (doc: any, ret: any) => { delete ret._id; } }
+});
+HabitCategorySchema.virtual('id').get(function (this: any) { return this._id.toHexString(); });
+export const HabitCategory = mongoose.models.HabitCategory || mongoose.model<IHabitCategory>("HabitCategory", HabitCategorySchema);
+
 export interface IHabit {
     name: string;
     userId: string;
     order: number;
+    categoryId: mongoose.Types.ObjectId;
     createdAt: Date;
 }
 
@@ -12,6 +29,7 @@ const HabitSchema: Schema = new Schema(
         name: { type: String, required: true },
         userId: { type: String, required: true, index: true },
         order: { type: Number, default: 0 },
+        categoryId: { type: Schema.Types.ObjectId, ref: "HabitCategory", required: true },
         createdAt: { type: Date, default: Date.now }
     },
     {
