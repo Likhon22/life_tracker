@@ -11,7 +11,7 @@ await connectToDatabase();
 
 There is no shared middleware/wrapper for this — it's repeated by hand in every route file. `session.user.id` is the Google OAuth `sub` claim (see `src/app/api/auth/[...nextauth]/route.ts`), and every Mongoose document that stores user data has a `userId` field indexed on it and filtered on in every query. This is how cross-user data isolation is enforced — there is no separate authorization layer beyond "does this document's `userId` match the session".
 
-`proxy.ts` (Next middleware) additionally gates page routes `/dashboard`, `/settings`, `/goals`, `/finance` — but **not** `/habits` or `/investments`. This is inconsistent; those two pages rely entirely on client-side session gating (`ModulePage` renders `AuthScreen` instead of content when unauthenticated). It is not a data-security hole — every API route independently checks the session — but it means an unauthenticated visitor briefly reaches the page shell for `/habits` and `/investments` before the client redirects to the sign-in screen, where `/goals` and `/finance` never do. Worth aligning the matcher list if the inconsistency matters to you.
+`proxy.ts` (Next middleware) additionally gates page routes `/dashboard`, `/settings`, `/goals`, `/finance` — but **not** `/habits`, `/investments`, or `/cigarettes`. This is inconsistent; those pages rely entirely on client-side session gating (`ModulePage` renders `AuthScreen` instead of content when unauthenticated). It is not a data-security hole — every API route independently checks the session — but it means an unauthenticated visitor briefly reaches the page shell before the client redirects to the sign-in screen, where `/goals` and `/finance` never do. Worth aligning the matcher list if the inconsistency matters to you.
 
 ---
 
@@ -28,16 +28,32 @@ NextAuth.js Google OAuth handler. JWT session strategy, 7-day expiry. Additional
 Returns the signed-in user's habits, sorted by `order` then `createdAt`. **Side effect**: if the user has zero habits, seeds 3 defaults ("To Do list", "Exercise", "Read") and returns those instead. This means the first-ever load always writes to the DB.
 
 ### `POST /api/habits`
-Body: `{ name: string }`. Case-insensitive duplicate-name check per user. New habit gets `order = current habit count` (appended to the end).
+Body: `{ name: string, categoryId: string }`. Case-insensitive duplicate-name check per user. `categoryId` is required. New habit gets `order = current habit count` (appended to the end).
 
 ### `PUT /api/habits/:id`
-Body: `{ name: string }`. Same duplicate check, excluding the habit being renamed.
+Body: `{ name: string, categoryId?: string }`. Same duplicate check, excluding the habit being renamed. `categoryId` is optional on edit (omit to leave unchanged).
 
 ### `DELETE /api/habits/:id`
 Deletes the habit, then `$pull`s its ID out of every `DailyRecord.habitIds` for that user (cleans up history references).
 
 ### `POST /api/habits/reorder`
 Body: `{ habitIds: string[] }`. Sets each habit's `order` to its index in the array via `Promise.all` of individual `findOneAndUpdate` calls (N writes, not batched — acceptable at typical habit-list sizes of a few dozen).
+
+---
+
+## Habit Categories
+
+### `GET /api/habits/categories`
+Returns the signed-in user's habit categories, sorted alphabetically. **Side effect**: if the user has zero categories, seeds 9 defaults (Faith, Career, Business, Health, Relationships, Finance, Personal Growth, Self-Care, Productivity) and returns those instead — same seed-on-first-load pattern as Finance/Investment categories. Shared between this route and `GET /api/habits`'s own default-habit seeding via `ensureHabitCategories()` in `src/lib/habitCategories.ts`.
+
+### `POST /api/habits/categories`
+Body: `{ name: string, icon: string }`. Case-insensitive duplicate-name check per user.
+
+### `PUT /api/habits/categories/:id`
+Body: `{ name: string, icon: string }`. Same duplicate check, excluding the category being renamed.
+
+### `DELETE /api/habits/categories/:id`
+400s if any habit still references the category (`Habit.countDocuments({ categoryId })` > 0) — same cascade-safety pattern as Investment category deletion. Move or delete those habits first.
 
 ---
 
@@ -127,13 +143,33 @@ Also deletes every `InvestmentTransaction` under that investment.
 
 ---
 
+## Cigarette Tracker
+
+### Brands
+- `GET /api/cigarettes/brands` — seeds 6 defaults (Lucky 12, Benson Light 23, Benson 23, Gold Leaf 18, Camel 10, Marlboro 23 — price per stick) on first call, same seed pattern as Finance/Habit categories
+- `POST /api/cigarettes/brands` — body `{ name, pricePerStick }`, case-insensitive duplicate check
+- `PUT /api/cigarettes/brands/:id`, `DELETE /api/cigarettes/brands/:id` — delete 400s if any `CigaretteLog` references the brand
+
+### Logs
+- `GET /api/cigarettes/logs?month=YYYY-MM` — populates `brandId`, sorted newest first
+- `POST /api/cigarettes/logs` — body `{ date, brandId, quantity, amount, isSelf, note? }`. **Finance sync**: also creates a `FinanceExpense` under the user's "Cigarettes" `FinanceCategory` (found by name, case-insensitive; auto-created if the user deleted it) with `note: "{quantity}x {brandName}"` (` (friend)` suffix when `isSelf` is false), and stores that expense's ID on the log as `financeExpenseId`. See `src/lib/cigaretteSync.ts`.
+- `PUT /api/cigarettes/logs/:id` — body is a partial update of the same fields. If the log has a `financeExpenseId`, the linked `FinanceExpense`'s `date`/`amount`/`month`/`note` are updated to match.
+- `DELETE /api/cigarettes/logs/:id` — also deletes the linked `FinanceExpense` if one exists, so cost and log never drift apart.
+
+All three writes run inside a Mongoose `session.withTransaction()` (the DB is MongoDB Atlas, a replica set, so real multi-document transactions are available) — the log write and its `FinanceExpense` write either both commit or neither does. On failure the client gets a static, plain-English error (e.g. "the cost couldn't be recorded in Finance, so nothing was saved"); the real error is only logged server-side, never forwarded to the response.
+
+Consumption stats (today/month self vs. friend counts, per-brand breakdown, daily trend) are computed client-side in `CigaretteProvider` from the fetched logs — there's no separate stats endpoint.
+
+---
+
 ## Data Models (`src/models/index.ts`)
 
 All models live in one file. Every schema uses a `toJSON` transform that strips `_id` and exposes a virtual `id: string` instead — the frontend never sees raw Mongo ObjectIds.
 
 | Model | Key fields | Notes |
 |---|---|---|
-| `Habit` | `name, userId, order` | |
+| `Habit` | `name, userId, order, categoryId` | `categoryId` is required, ref `HabitCategory` |
+| `HabitCategory` | `userId, name, icon` | |
 | `DailyRecord` | `date, userId, habitIds[]` | Unique compound index `{ date, userId }` |
 | `DailyGoal` | `text, completed, date, userId, order` | |
 | `FinanceBudget` | `userId, month, amount` | Unique compound index `{ userId, month }` |
@@ -143,6 +179,8 @@ All models live in one file. Every schema uses a `toJSON` transform that strips 
 | `InvestmentCategory` | `userId, name, icon` | |
 | `Investment` | `userId, name, categoryId, note?` | |
 | `InvestmentTransaction` | `userId, investmentId, type, amount, date, note?` | |
+| `CigaretteBrand` | `userId, name, pricePerStick` | |
+| `CigaretteLog` | `userId, date, brandId, quantity, amount, isSelf, note?, financeExpenseId?` | `financeExpenseId` links to the auto-created `FinanceExpense`; kept in sync on edit/delete |
 
 **Removed**: the `Resume` model (AI Resume Architect feature) was deleted along with its API routes, components, and Gemini integration — it was unrelated to the app's actual purpose (life/habit tracking) and is gone entirely, not just hidden.
 

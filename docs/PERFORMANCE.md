@@ -44,7 +44,22 @@ Entirely unrelated to a life/habit tracker: an AI-powered LaTeX résumé generat
 - The `@google/generative-ai` dependency from `package.json`
 - All nav references (Sidebar, BottomNav, dashboard card)
 
-### 8. Folder structure — feature-based reorganization
+### 8. Native `autoFocus` jumping the page to the bottom (habits, goals, finance budget)
+**Before**: `HabitList`'s add/edit inputs, `DailyGoals`'s add-goal input, and `BudgetSummary`'s edit-budget input all used the HTML `autoFocus` attribute. Browsers scroll a newly-focused element into view by default; on a tall page (e.g. the habit list with the full month's history cards stacked down the column — only visible on desktop, since mobile hides history behind a toggle, which is why the bug was desktop-only) this yanked the scroll position away from where the user was looking, every time they opened an add/edit form.
+**After**: replaced `autoFocus` on all four inputs with a `ref` + `useEffect(() => inputRef.current?.focus({ preventScroll: true }), [isOpenState])`. Focus still happens automatically; the browser's scroll-into-view no longer fires.
+**Files**: `src/components/habits/HabitList.tsx` (×2), `src/components/goals/DailyGoals.tsx`, `src/components/finance/BudgetSummary.tsx`
+
+### 9. Finance "Daily Avg" divided by the wrong number of days
+**Before**: `BudgetSummary`'s `dailyExpenseAvg` divided `totalDailyExpenses` by calendar days elapsed in the month (`getDate(new Date())` for the current month, `getDaysInMonth(...)` for a past one) — so a month with several zero-spend days understated the real daily average.
+**After**: divides by the count of distinct dates that actually have an expense logged (`new Set(expenses.map(e => e.date)).size`). A day with no logged expense no longer drags the average down. Confirmed against September 2026 data: 28 of 30 days had spend, moving the average from ~453 (÷30) to ~485 (÷28).
+**File**: `src/components/finance/BudgetSummary.tsx`
+
+### 10. Cigarette log ↔ Finance expense writes weren't atomic
+**Before**: creating/editing/deleting a `CigaretteLog` and its linked `FinanceExpense` were two separate, unguarded writes. A failure between them could leave one without the other — e.g. on create, the expense was written first, so a failure on the log write would orphan a Finance entry with no matching log; on delete, the log was removed first, so a failure on the expense delete would leave a stale expense behind.
+**After**: all three routes (`POST /api/cigarettes/logs`, `PUT /api/cigarettes/logs/:id`, `DELETE /api/cigarettes/logs/:id`) wrap both writes in one `mongoose.startSession()` + `session.withTransaction()` — either both commit or neither does. Client-facing errors are static plain-English strings (never `error.message` from Mongo), so a failure never surfaces DB internals to the user.
+**Files**: `src/lib/cigaretteSync.ts`, `src/app/api/cigarettes/logs/route.ts`, `src/app/api/cigarettes/logs/[id]/route.ts`
+
+### 11. Folder structure — feature-based reorganization
 Every component used to live flat in `src/components/`, mixing layout chrome, auth, and every feature together. Reorganized into `ui/`, `layout/`, `auth/`, `providers/`, `habits/`, `goals/`, `finance/`, `investments/` — see `docs/FRONTEND.md` for the full tree. `finance/` already followed this pattern before the change; everything else didn't.
 
 ---
@@ -54,9 +69,9 @@ Every component used to live flat in `src/components/`, mixing layout chrome, au
 These weren't fixed because they're either low-impact at the app's current scale, or a larger/riskier change than seemed proportionate to bundle into this pass. Flagging them so you can prioritize:
 
 1. **`finance/*` and `goals/DailyGoals.tsx` still use hand-written buttons/inputs/cards**, not the new `ui/` primitives. Mechanical migration, same pattern as `investments/`, but touches ~8 files with several instances each.
-2. **`proxy.ts` middleware matcher is inconsistent**: protects `/goals` and `/finance` but not `/habits` or `/investments`. Not a security hole (every API route checks the session independently), just an inconsistency in the middleware list.
+2. **`proxy.ts` middleware matcher is inconsistent**: protects `/goals` and `/finance` but not `/habits`, `/investments`, or `/cigarettes`. Not a security hole (every API route checks the session independently), just an inconsistency in the middleware list.
 3. **In-memory rate limiter** (`src/lib/rateLimit.ts`) resets on server restart and doesn't share state across multiple instances — fine for a single Node process, would need a shared store (Redis, etc.) if deployed to a multi-instance/serverless platform with meaningful traffic.
-4. **`HabitProvider`'s completion-rate calculations aren't memoized** — recomputed on every call. Negligible at typical habit-list sizes; worth a `useMemo` if habit counts grow much larger.
+4. **`HabitProvider`'s completion-rate calculations aren't memoized** (`getHabitCompletionRate`, `getDailyCompletionRate`, `getCategoryCompletionRate`) — recomputed on every call. Negligible at typical habit-list sizes; worth a `useMemo` if habit counts grow much larger.
 5. **`habits/reorder` and category-folder deletes issue N individual writes** (`Promise.all` of per-document updates) rather than a single bulk operation (e.g. Mongoose `bulkWrite`). Fine at typical list sizes (tens of items), would matter more at hundreds+.
 6. **`package.json`'s `mongoose` version (`^9.2.3`)** — worth double-checking this is intentional; Mongoose's stable major at time of writing is 8.x. Not something to change without confirming it's not a typo, since it wasn't part of what broke.
 

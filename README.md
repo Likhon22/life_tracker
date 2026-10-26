@@ -12,6 +12,7 @@ For deeper reference docs, see:
 ### 📅 Habit Tracking
 - Interactive daily habit grid with drag-and-drop reordering (`@dnd-kit`)
 - Monthly history view, per-habit and daily completion-rate analytics
+- Habits are grouped into categories (Faith, Career, Business, Health, Relationships, Finance, Personal Growth, Self-Care, Productivity by default — fully editable/addable). Analytics sidebar shows per-category completion % plus month-over-month growth, and a "By Category" bar chart ranks every category good/average/needs-focus
 - Optimistic UI with automatic rollback on failure
 
 ### 🎯 Daily Goals
@@ -28,6 +29,11 @@ For deeper reference docs, see:
 - Category "folders" (crypto, stocks, business, etc.) containing multiple assets
 - Per-asset invest/withdraw transaction history with running P&L
 - Portfolio-wide and per-category totals
+
+### 🚬 Cigarette Tracker
+- Brand catalog (price per stick, editable/addable) — log a brand + quantity and the amount auto-calculates, but stays manually overridable for real-world rounding (e.g. shop charges 25 for what's technically 24)
+- Every log auto-creates/updates/deletes a matching entry under Finance → Cigarettes, so cost never needs double-entry
+- Tracks "myself" vs "given to a friend" separately — cost always counts both, but consumption stats (today/this month, per-brand, daily trend chart) only count what you actually smoked
 
 ### 🔒 Secure Multi-User System
 - Google Authentication (NextAuth.js)
@@ -54,19 +60,19 @@ For deeper reference docs, see:
 ```
 src/
   app/                  # Next.js App Router — pages + API routes
-    api/                # habits, records, goals, finance/*, investments/*, auth
-    habits|goals|finance|investments/page.tsx
+    api/                # habits(+categories), records, goals, finance/*, investments/*, cigarettes/*, auth
+    habits|goals|finance|investments|cigarettes/page.tsx
   components/
     ui/                 # Button, IconButton, Input, Select, Card — shared primitives
     layout/             # Sidebar, BottomNav, ModulePage
     auth/                # AuthProvider, AuthScreen
     providers/          # QueryProvider (TanStack Query root)
-    habits/ goals/ finance/ investments/   # feature-scoped components + data hooks
-  lib/                  # mongodb, rateLimit, utils, confirmToast
+    habits/ goals/ finance/ investments/ cigarettes/   # feature-scoped components + data hooks
+  lib/                  # mongodb, rateLimit, utils, confirmToast, habitCategories, cigaretteSync
   models/                # single Mongoose schema file (all collections)
 ```
 
-Each feature folder (`habits/`, `goals/`, `finance/`, `investments/`) owns its own data-fetching logic — either a Provider (Context + React Query) for state shared across many components, or a `useX` hook for a single page. See [`docs/FRONTEND.md`](docs/FRONTEND.md) for the full breakdown.
+Each feature folder (`habits/`, `goals/`, `finance/`, `investments/`, `cigarettes/`) owns its own data-fetching logic — either a Provider (Context + React Query) for state shared across many components, or a `useX` hook for a single page. See [`docs/FRONTEND.md`](docs/FRONTEND.md) for the full breakdown.
 
 ---
 
@@ -112,7 +118,7 @@ npm run dev
 npm run build   # production build
 npm run lint    # eslint
 ```
-`scripts/` also has one-off maintenance scripts (`fix-db.ts`, `wipe.ts`, `seed-user-habits.ts`, `cleanup-user-data.ts`) run via `npx tsx scripts/<name>.ts`.
+`scripts/` also has one-off maintenance scripts (`fix-db.ts`, `wipe.ts`, `seed-user-habits.ts`, `cleanup-user-data.ts`, `categorize-habits.ts`) run via `npx tsx scripts/<name>.ts`.
 
 ---
 

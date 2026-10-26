@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import mongoose from "mongoose";
 import connectToDatabase from "@/lib/mongodb";
 import { CigaretteLog, CigaretteBrand } from "@/models";
 import { createLinkedExpense } from "@/lib/cigaretteSync";
@@ -50,30 +51,45 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: "Brand not found" }, { status: 404 });
         }
 
-        const expense = await createLinkedExpense({
-            userId: session.user.id,
-            date,
-            amount,
-            quantity,
-            brandName: brand.name,
-            isSelf: isSelf ?? true,
-        });
+        // The log and its linked Finance expense are written in one transaction: either both
+        // land or neither does, so a mid-write failure can never leave one without the other.
+        const dbSession = await mongoose.startSession();
+        let logId;
+        try {
+            await dbSession.withTransaction(async () => {
+                const expense = await createLinkedExpense({
+                    userId: session.user.id,
+                    date,
+                    amount,
+                    quantity,
+                    brandName: brand.name,
+                    isSelf: isSelf ?? true,
+                }, dbSession);
 
-        const log = await CigaretteLog.create({
-            userId: session.user.id,
-            date,
-            brandId,
-            quantity,
-            amount,
-            isSelf: isSelf ?? true,
-            note,
-            financeExpenseId: expense._id,
-        });
+                const [log] = await CigaretteLog.create([{
+                    userId: session.user.id,
+                    date,
+                    brandId,
+                    quantity,
+                    amount,
+                    isSelf: isSelf ?? true,
+                    note,
+                    financeExpenseId: expense._id,
+                }], { session: dbSession });
 
-        const populatedLog = await CigaretteLog.findById(log._id).populate("brandId");
+                logId = log._id;
+            });
+        } finally {
+            await dbSession.endSession();
+        }
+
+        const populatedLog = await CigaretteLog.findById(logId).populate("brandId");
         return NextResponse.json(populatedLog, { status: 201 });
     } catch (error) {
         console.error("Failed to create cigarette log:", error);
-        return NextResponse.json({ error: "Failed to create cigarette log" }, { status: 500 });
+        return NextResponse.json(
+            { error: "Couldn't save the log — the cost couldn't be recorded in Finance, so nothing was saved. Please try again." },
+            { status: 500 }
+        );
     }
 }

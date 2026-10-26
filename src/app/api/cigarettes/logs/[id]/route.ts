@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import mongoose from "mongoose";
 import connectToDatabase from "@/lib/mongodb";
 import { CigaretteLog, CigaretteBrand, FinanceExpense } from "@/models";
 import { syncLinkedExpense } from "@/lib/cigaretteSync";
@@ -37,26 +38,39 @@ export async function PUT(request: Request, props: { params: Promise<{ id: strin
             note: note ?? existingLog.note,
         };
 
-        const updatedLog = await CigaretteLog.findOneAndUpdate(
-            { _id: params.id, userId: session.user.id },
-            update,
-            { returnDocument: "after" }
-        ).populate("brandId");
+        // The log update and its linked Finance expense update happen in one transaction,
+        // so the two can't end up showing different amounts/dates if one write fails.
+        const dbSession = await mongoose.startSession();
+        try {
+            await dbSession.withTransaction(async () => {
+                await CigaretteLog.updateOne(
+                    { _id: params.id, userId: session.user.id },
+                    update,
+                    { session: dbSession }
+                );
 
-        if (updatedLog?.financeExpenseId) {
-            await syncLinkedExpense(updatedLog.financeExpenseId, {
-                date: update.date,
-                amount: update.amount,
-                quantity: update.quantity,
-                brandName: brand.name,
-                isSelf: update.isSelf,
+                if (existingLog.financeExpenseId) {
+                    await syncLinkedExpense(existingLog.financeExpenseId, {
+                        date: update.date,
+                        amount: update.amount,
+                        quantity: update.quantity,
+                        brandName: brand.name,
+                        isSelf: update.isSelf,
+                    }, dbSession);
+                }
             });
+        } finally {
+            await dbSession.endSession();
         }
 
+        const updatedLog = await CigaretteLog.findById(params.id).populate("brandId");
         return NextResponse.json(updatedLog);
     } catch (error) {
         console.error("Failed to update cigarette log:", error);
-        return NextResponse.json({ error: "Failed to update cigarette log" }, { status: 500 });
+        return NextResponse.json(
+            { error: "Couldn't save the update — the linked Finance entry couldn't be updated, so nothing changed. Please try again." },
+            { status: 500 }
+        );
     }
 }
 
@@ -70,18 +84,35 @@ export async function DELETE(request: Request, props: { params: Promise<{ id: st
 
         await connectToDatabase();
 
-        const deletedLog = await CigaretteLog.findOneAndDelete({ _id: params.id, userId: session.user.id });
-        if (!deletedLog) {
+        const existingLog = await CigaretteLog.findOne({ _id: params.id, userId: session.user.id });
+        if (!existingLog) {
             return NextResponse.json({ error: "Log not found" }, { status: 404 });
         }
 
-        if (deletedLog.financeExpenseId) {
-            await FinanceExpense.deleteOne({ _id: deletedLog.financeExpenseId, userId: session.user.id });
+        // Deleting the log and its linked Finance expense happens in one transaction,
+        // so a failure partway through can't leave a stale expense with no matching log.
+        const dbSession = await mongoose.startSession();
+        try {
+            await dbSession.withTransaction(async () => {
+                await CigaretteLog.deleteOne({ _id: params.id, userId: session.user.id }, { session: dbSession });
+
+                if (existingLog.financeExpenseId) {
+                    await FinanceExpense.deleteOne(
+                        { _id: existingLog.financeExpenseId, userId: session.user.id },
+                        { session: dbSession }
+                    );
+                }
+            });
+        } finally {
+            await dbSession.endSession();
         }
 
         return NextResponse.json({ success: true, id: params.id });
     } catch (error) {
         console.error("Failed to delete cigarette log:", error);
-        return NextResponse.json({ error: "Failed to delete cigarette log" }, { status: 500 });
+        return NextResponse.json(
+            { error: "Couldn't delete — the linked Finance entry couldn't be removed, so nothing was deleted. Please try again." },
+            { status: 500 }
+        );
     }
 }

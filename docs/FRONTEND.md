@@ -13,7 +13,8 @@ src/components/
   providers/     QueryProvider
                  — wraps the app in a TanStack Query QueryClientProvider
   habits/        HabitProvider (Context + React Query), HabitList,
-                 AnalyticsSidebar, PerformanceChart
+                 AnalyticsSidebar, PerformanceChart, CategorySelect,
+                 HabitCategoryManager
   goals/         DailyGoals (owns its own React Query hooks directly, no Provider)
   finance/       FinanceProvider (Context + React Query) + 7 presentational
                  components (BudgetSummary, AddExpense, CategoryManager,
@@ -21,6 +22,8 @@ src/components/
   investments/   useInvestments (plain hook, no Context) + SummaryCard,
                  AddCategoryForm, CategoryFolder, InvestmentAssetCard,
                  TransactionRow, types.ts
+  cigarettes/    CigaretteProvider (Context + React Query), LogEntryForm,
+                 BrandSelect, BrandManager, CigaretteStats, LogList
 ```
 
 Before this reorganization, every component lived flat in `src/components/` regardless of feature, and `investments/page.tsx` was a single 716-line file with all state, all data fetching, and all JSX inline — no sub-components at all. That's fixed now; every feature folder mirrors the `finance/` pattern that already existed.
@@ -43,10 +46,11 @@ What React Query buys here concretely:
 
 | Feature | Keys |
 |---|---|
-| Habits | `["habits"]`, `["records"]` |
+| Habits | `["habits"]`, `["records"]`, `["habitCategories"]` |
 | Finance | `["finance", "budget", month]`, `["finance", "categories"]`, `["finance", "expenses", month]`, `["finance", "fixed-costs", month]` |
 | Investments | `["investments", "categories"]`, `["investments", "list"]` |
 | Goals | `["goals", date]` |
+| Cigarettes | `["cigaretteBrands"]`, `["cigaretteLogs", month]` |
 
 Finance and Goals keys include the selected month/date, so switching months/dates is a **cache key change**, not a manual refetch — previously revisiting a month always re-fetched even if you'd been there seconds ago; now it's instant if cached.
 
@@ -62,6 +66,8 @@ Before this pass, every button/input/card was hand-styled inline with the same T
 
 **Applied so far**: the entire `investments/` feature (built fresh with these), and `HabitList`'s delete confirmation. **Not yet migrated**: `finance/*` and `goals/DailyGoals.tsx` still use their original hand-written markup — they were left alone to limit the size/risk of this change, since retrofitting ~15 files each with multiple button/input instances is a larger, separate pass. They're straightforward candidates for the same primitives when you're ready.
 
+**Not using `Select`**: habit-category and cigarette-brand pickers (`habits/CategorySelect.tsx`, `cigarettes/BrandSelect.tsx`) deliberately skip the native `<select>` — browsers render its open option list with no CSS control, which looked out of place next to the rest of the dark UI. Both are small custom dropdowns (button + absolutely-positioned list, click-outside/Escape to close) duplicated across the two files rather than shared, since this is only the 2nd occurrence and the two have different row content (icon+name vs. name+price). Worth collapsing into one generic component if a 3rd picker like this shows up.
+
 ## `confirmToast` (`src/lib/confirmToast.tsx`)
 
 The "Delete this?" confirmation toast (cancel/delete buttons, same styling) was duplicated near-verbatim in `HabitList`, and twice in the old `investments/page.tsx`. Extracted into one function: `confirmToast({ message, description?, confirmLabel?, onConfirm })`. Used in `HabitList`, `InvestmentAssetCard`, and `CategoryFolder`.
@@ -72,8 +78,21 @@ The original `investments/page.tsx` kept "which transaction is being edited", "w
 
 In the rebuilt version, `TransactionRow` and `InvestmentAssetCard` each own this state locally. Practical effect: you can now, for example, have two different assets' transaction-add forms open at once. This is a deliberate relaxation, not a bug — it's what naturally falls out of components being self-contained instead of coordinated through page-level state, and it removes an arbitrary restriction rather than introducing one.
 
+## Habit categories
+
+Every habit belongs to a `HabitCategory` (`categoryId`, required). `AnalyticsSidebar` groups habits under their category's header instead of one flat list — each header shows the category's aggregate completion % (average of its habits' own rates, not pooled completions/possible — chosen so a brand-new habit in a category doesn't drag the number down disproportionately) plus a month-over-month ▲/▼ delta. Per-habit rows are unchanged underneath. `PerformanceChart` gets a third "By Category" tab: a horizontal bar per category, colored by the same red/yellow/green/blue tiers as the circular progress rings (`<40` / `40-69` / `≥70` / `100`), sorted best-to-worst.
+
+Category CRUD (`HabitCategoryManager`, opened from a gear icon in `AnalyticsSidebar`'s header) mirrors `finance/CategoryManager.tsx`. Deleting a category is blocked (400) while it still has habits, same safety pattern as Investment category deletion.
+
+A one-off migration (`scripts/categorize-habits.ts`) bulk-assigned every pre-existing habit into the 9 default categories by exact name match, so no habit was left without a `categoryId` when the field became required.
+
+## Cigarette tracker ↔ Finance link
+
+`cigarettes/CigaretteProvider.tsx` is a self-contained feature (own brands + logs, own stats computed client-side via `useMemo` over the fetched logs), but every log also creates a `FinanceExpense` under the user's "Cigarettes" category — the API does this server-side (`src/lib/cigaretteSync.ts`), not the frontend, so the link survives even if the cigarette log is later edited or deleted directly in the DB. The frontend never has to reconcile two sources of truth for cost; it just shows the logs and lets Finance's own queries pick up the resulting expenses on their own next fetch.
+
 ## Known remaining inefficiencies (not fixed, listed for visibility)
 
-- `HabitProvider.getHabitCompletionRate` / `getDailyCompletionRate` are plain functions recomputed on every call (not memoized). At typical habit-list sizes (a few dozen) this is negligible, but if habit counts grow large, wrapping the per-habit rate calculation in `useMemo` keyed on `[habits, records]` would avoid recomputation on unrelated re-renders.
-- `proxy.ts` middleware matcher doesn't include `/habits` or `/investments` (see `docs/API.md`) — inconsistent with `/goals` and `/finance`, though not a security gap since API routes independently check the session.
+- `HabitProvider.getHabitCompletionRate` / `getDailyCompletionRate` / `getCategoryCompletionRate` are plain functions recomputed on every call (not memoized). At typical habit-list sizes (a few dozen) this is negligible, but if habit counts grow large, wrapping the per-habit rate calculation in `useMemo` keyed on `[habits, records]` would avoid recomputation on unrelated re-renders.
+- `proxy.ts` middleware matcher doesn't include `/habits`, `/investments`, or `/cigarettes` (see `docs/API.md`) — inconsistent with `/goals` and `/finance`, though not a security gap since API routes independently check the session.
 - `finance/*` and `goals/DailyGoals.tsx` haven't been migrated to the `ui/` primitives yet (see above).
+- `CategorySelect` and `BrandSelect` duplicate the same click-outside/Escape dropdown mechanics (see "Not using `Select`" above) — fine at 2 occurrences, a candidate to extract if a 3rd shows up.
