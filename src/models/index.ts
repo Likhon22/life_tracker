@@ -222,6 +222,51 @@ const InvestmentSchema = new Schema({
 InvestmentSchema.virtual('id').get(function (this: any) { return this._id.toHexString(); });
 export const Investment = mongoose.models.Investment || mongoose.model<IInvestment>("Investment", InvestmentSchema);
 
+// --- Cigarette Tracker Models ---
+
+export interface ICigaretteBrand {
+    userId: string;
+    name: string;
+    pricePerStick: number;
+}
+
+const CigaretteBrandSchema = new Schema({
+    userId: { type: String, required: true, index: true },
+    name: { type: String, required: true },
+    pricePerStick: { type: Number, required: true }
+}, {
+    toJSON: { virtuals: true, versionKey: false, transform: (doc: any, ret: any) => { delete ret._id; } }
+});
+CigaretteBrandSchema.virtual('id').get(function (this: any) { return this._id.toHexString(); });
+export const CigaretteBrand = mongoose.models.CigaretteBrand || mongoose.model<ICigaretteBrand>("CigaretteBrand", CigaretteBrandSchema);
+
+export interface ICigaretteLog {
+    userId: string;
+    date: string; // YYYY-MM-DD
+    brandId: mongoose.Types.ObjectId;
+    quantity: number;
+    amount: number;
+    isSelf: boolean;
+    note?: string;
+    financeExpenseId?: mongoose.Types.ObjectId;
+}
+
+const CigaretteLogSchema = new Schema({
+    userId: { type: String, required: true, index: true },
+    date: { type: String, required: true, index: true },
+    brandId: { type: Schema.Types.ObjectId, ref: "CigaretteBrand", required: true },
+    quantity: { type: Number, required: true },
+    amount: { type: Number, required: true },
+    isSelf: { type: Boolean, default: true },
+    note: { type: String },
+    financeExpenseId: { type: Schema.Types.ObjectId, ref: "FinanceExpense" }
+}, {
+    timestamps: true,
+    toJSON: { virtuals: true, versionKey: false, transform: (doc: any, ret: any) => { delete ret._id; } }
+});
+CigaretteLogSchema.virtual('id').get(function (this: any) { return this._id.toHexString(); });
+export const CigaretteLog = mongoose.models.CigaretteLog || mongoose.model<ICigaretteLog>("CigaretteLog", CigaretteLogSchema);
+
 export interface IInvestmentTransaction {
     userId: string;
     investmentId: mongoose.Types.ObjectId;

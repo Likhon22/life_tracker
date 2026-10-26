@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, CheckSquare, Target, Wallet, Landmark } from "lucide-react";
+import { LayoutDashboard, CheckSquare, Target, Wallet, Landmark, Cigarette } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function BottomNav() {
@@ -39,6 +39,12 @@ export function BottomNav() {
                     label="Invest"
                     href="/investments"
                     active={pathname === "/investments"}
+                />
+                <BottomNavItem
+                    icon={<Cigarette className="w-5 h-5" />}
+                    label="Smoke"
+                    href="/cigarettes"
+                    active={pathname === "/cigarettes"}
                 />
             </div>
         </nav>
