@@ -4,10 +4,9 @@ import { useFinance } from "./FinanceProvider";
 import { TrendingUp, Wallet, ArrowDownCircle, ArrowUpCircle, ShoppingCart, CalendarDays, Edit2, Check, X } from "lucide-react";
 import { cn, evaluateMath } from "@/lib/utils";
 import { useState, useMemo, useRef, useEffect } from "react";
-import { getDate, getDaysInMonth } from "date-fns";
 
 export function BudgetSummary() {
-    const { budget, totalSpent, totalDailyExpenses, selectedMonth, isCurrentMonth, remainingBudget, updateBudget, isFutureMonth } = useFinance();
+    const { budget, totalSpent, totalDailyExpenses, expenses, remainingBudget, updateBudget, isFutureMonth } = useFinance();
     const [isEditing, setIsEditing] = useState(false);
     const [newBudget, setNewBudget] = useState(budget.toString());
     const budgetInputRef = useRef<HTMLInputElement>(null);
@@ -15,11 +14,11 @@ export function BudgetSummary() {
         if (isEditing) budgetInputRef.current?.focus({ preventScroll: true });
     }, [isEditing]);
 
+    // Average only over days that actually have an expense logged, not every calendar day elapsed.
     const dailyExpenseAvg = useMemo(() => {
-        const [year, month] = selectedMonth.split("-").map(Number);
-        const divisor = isCurrentMonth ? getDate(new Date()) : getDaysInMonth(new Date(year, month - 1));
-        return divisor > 0 ? totalDailyExpenses / divisor : 0;
-    }, [totalDailyExpenses, selectedMonth, isCurrentMonth]);
+        const daysWithExpenses = new Set(expenses.map((e) => e.date)).size;
+        return daysWithExpenses > 0 ? totalDailyExpenses / daysWithExpenses : 0;
+    }, [totalDailyExpenses, expenses]);
 
     const handleSave = async () => {
         const val = evaluateMath(newBudget);

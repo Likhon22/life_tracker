@@ -21,7 +21,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { confirmToast } from "@/lib/confirmToast";
-import { Select } from "@/components/ui/Select";
+import { CategorySelect } from "./CategorySelect";
 import type { HabitCategory } from "./HabitProvider";
 
 interface HabitItemProps {
@@ -129,15 +129,11 @@ function SortableHabitItem({
                                 </button>
                             </div>
                         </div>
-                        <Select
+                        <CategorySelect
+                            categories={categories}
                             value={editCategoryId}
-                            onChange={(e) => setEditCategoryId(e.target.value)}
-                            className="!py-1 !text-xs"
-                        >
-                            {categories.map((cat) => (
-                                <option key={cat.id} value={cat.id}>{cat.name}</option>
-                            ))}
-                        </Select>
+                            onChange={setEditCategoryId}
+                        />
                     </div>
                 ) : (
                     <>
@@ -361,15 +357,11 @@ export function HabitList() {
                                                     </button>
                                                 </div>
                                             </div>
-                                            <Select
+                                            <CategorySelect
+                                                categories={categories}
                                                 value={newCategoryId}
-                                                onChange={(e) => setNewCategoryId(e.target.value)}
-                                                className="!py-1 !text-xs"
-                                            >
-                                                {categories.map((cat) => (
-                                                    <option key={cat.id} value={cat.id}>{cat.name}</option>
-                                                ))}
-                                            </Select>
+                                                onChange={setNewCategoryId}
+                                            />
                                         </div>
                                     ) : (
                                         <button
