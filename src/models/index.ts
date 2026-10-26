@@ -246,7 +246,8 @@ export interface ICigaretteLog {
     brandId: mongoose.Types.ObjectId;
     quantity: number;
     amount: number;
-    isSelf: boolean;
+    consumedBySelf: boolean; // who smoked it
+    paidBySelf: boolean; // who paid for it — independent of who smoked it
     note?: string;
     financeExpenseId?: mongoose.Types.ObjectId;
 }
@@ -257,7 +258,8 @@ const CigaretteLogSchema = new Schema({
     brandId: { type: Schema.Types.ObjectId, ref: "CigaretteBrand", required: true },
     quantity: { type: Number, required: true },
     amount: { type: Number, required: true },
-    isSelf: { type: Boolean, default: true },
+    consumedBySelf: { type: Boolean, default: true },
+    paidBySelf: { type: Boolean, default: true },
     note: { type: String },
     financeExpenseId: { type: Schema.Types.ObjectId, ref: "FinanceExpense" }
 }, {

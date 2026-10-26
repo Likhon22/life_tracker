@@ -39,7 +39,7 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        const { date, brandId, quantity, amount, isSelf, note } = await request.json();
+        const { date, brandId, quantity, amount, consumedBySelf, paidBySelf, note } = await request.json();
         if (!date || !brandId || !quantity || !amount) {
             return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
         }
@@ -51,20 +51,27 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: "Brand not found" }, { status: 404 });
         }
 
-        // The log and its linked Finance expense are written in one transaction: either both
-        // land or neither does, so a mid-write failure can never leave one without the other.
+        const resolvedConsumedBySelf = consumedBySelf ?? true;
+        const resolvedPaidBySelf = paidBySelf ?? true;
+
+        // The log and its linked Finance expense (when you're the one who paid) are written
+        // in one transaction: either both land or neither does.
         const dbSession = await mongoose.startSession();
         let logId;
         try {
             await dbSession.withTransaction(async () => {
-                const expense = await createLinkedExpense({
-                    userId: session.user.id,
-                    date,
-                    amount,
-                    quantity,
-                    brandName: brand.name,
-                    isSelf: isSelf ?? true,
-                }, dbSession);
+                // Only your own money creates a Finance entry — a friend paying for your
+                // cigarette isn't your expense, so nothing gets added to cost.
+                const expenseId = resolvedPaidBySelf
+                    ? (await createLinkedExpense({
+                        userId: session.user.id,
+                        date,
+                        amount,
+                        quantity,
+                        brandName: brand.name,
+                        consumedBySelf: resolvedConsumedBySelf,
+                    }, dbSession))._id
+                    : undefined;
 
                 const [log] = await CigaretteLog.create([{
                     userId: session.user.id,
@@ -72,9 +79,10 @@ export async function POST(request: Request) {
                     brandId,
                     quantity,
                     amount,
-                    isSelf: isSelf ?? true,
+                    consumedBySelf: resolvedConsumedBySelf,
+                    paidBySelf: resolvedPaidBySelf,
                     note,
-                    financeExpenseId: expense._id,
+                    financeExpenseId: expenseId,
                 }], { session: dbSession });
 
                 logId = log._id;

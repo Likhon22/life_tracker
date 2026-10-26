@@ -152,11 +152,13 @@ Also deletes every `InvestmentTransaction` under that investment.
 
 ### Logs
 - `GET /api/cigarettes/logs?month=YYYY-MM` — populates `brandId`, sorted newest first
-- `POST /api/cigarettes/logs` — body `{ date, brandId, quantity, amount, isSelf, note? }`. **Finance sync**: also creates a `FinanceExpense` under the user's "Cigarettes" `FinanceCategory` (found by name, case-insensitive; auto-created if the user deleted it) with `note: "{quantity}x {brandName}"` (` (friend)` suffix when `isSelf` is false), and stores that expense's ID on the log as `financeExpenseId`. See `src/lib/cigaretteSync.ts`.
-- `PUT /api/cigarettes/logs/:id` — body is a partial update of the same fields. If the log has a `financeExpenseId`, the linked `FinanceExpense`'s `date`/`amount`/`month`/`note` are updated to match.
+- `POST /api/cigarettes/logs` — body `{ date, brandId, quantity, amount, consumedBySelf, paidBySelf, note? }`. **`consumedBySelf`** (who smoked it) and **`paidBySelf`** (who paid) are independent — e.g. a friend can cover your bill (`consumedBySelf: true, paidBySelf: false`), or you can cover theirs (`consumedBySelf: false, paidBySelf: true`). **Finance sync**: a `FinanceExpense` is only created when `paidBySelf` is true (it's not your expense otherwise) — under the user's "Cigarettes" `FinanceCategory` (found by name, case-insensitive; auto-created if the user deleted it), `note: "{quantity}x {brandName}"` (` (friend)` suffix when `consumedBySelf` is false), with that expense's ID stored on the log as `financeExpenseId`. See `src/lib/cigaretteSync.ts`.
+- `PUT /api/cigarettes/logs/:id` — body is a partial update of the same fields. `paidBySelf` can flip either direction between edits, so the linked expense is created, synced, or deleted to match: true→true syncs it, false→true creates one that never existed, true→false deletes it (and `financeExpenseId` is explicitly `$unset`, not just left `undefined` — an `undefined` value in a plain Mongoose update object is silently dropped, not persisted), false→false is a no-op.
 - `DELETE /api/cigarettes/logs/:id` — also deletes the linked `FinanceExpense` if one exists, so cost and log never drift apart.
 
 All three writes run inside a Mongoose `session.withTransaction()` (the DB is MongoDB Atlas, a replica set, so real multi-document transactions are available) — the log write and its `FinanceExpense` write either both commit or neither does. On failure the client gets a static, plain-English error (e.g. "the cost couldn't be recorded in Finance, so nothing was saved"); the real error is only logged server-side, never forwarded to the response.
+
+Consumption stats (self vs. friend sticks) are keyed on `consumedBySelf`; cost stats (today/month/per-brand) are keyed on `paidBySelf` — a friend-paid log still counts toward your sticks but never toward your cost, matching what actually left your pocket.
 
 Consumption stats (today/month self vs. friend counts, per-brand breakdown, daily trend) are computed client-side in `CigaretteProvider` from the fetched logs — there's no separate stats endpoint.
 
@@ -180,7 +182,7 @@ All models live in one file. Every schema uses a `toJSON` transform that strips 
 | `Investment` | `userId, name, categoryId, note?` | |
 | `InvestmentTransaction` | `userId, investmentId, type, amount, date, note?` | |
 | `CigaretteBrand` | `userId, name, pricePerStick` | |
-| `CigaretteLog` | `userId, date, brandId, quantity, amount, isSelf, note?, financeExpenseId?` | `financeExpenseId` links to the auto-created `FinanceExpense`; kept in sync on edit/delete |
+| `CigaretteLog` | `userId, date, brandId, quantity, amount, consumedBySelf, paidBySelf, note?, financeExpenseId?` | `consumedBySelf` (who smoked it) and `paidBySelf` (who paid) are independent; `financeExpenseId` only exists while `paidBySelf` is true, kept in sync on edit/delete |
 
 **Removed**: the `Resume` model (AI Resume Architect feature) was deleted along with its API routes, components, and Gemini integration — it was unrelated to the app's actual purpose (life/habit tracking) and is gone entirely, not just hidden.
 

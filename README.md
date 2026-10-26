@@ -32,8 +32,9 @@ For deeper reference docs, see:
 
 ### 🚬 Cigarette Tracker
 - Brand catalog (price per stick, editable/addable) — log a brand + quantity and the amount auto-calculates, but stays manually overridable for real-world rounding (e.g. shop charges 25 for what's technically 24)
-- Every log auto-creates/updates/deletes a matching entry under Finance → Cigarettes, so cost never needs double-entry
-- Tracks "myself" vs "given to a friend" separately — cost always counts both, but consumption stats (today/this month, per-brand, daily trend chart) only count what you actually smoked
+- "Smoked by" and "paid by" are tracked independently (you can cover a friend's bill, or they can cover yours) — a log only creates a Finance entry when you're the one who paid
+- Every self-paid log auto-creates/updates/deletes a matching entry under Finance → Cigarettes, so cost never needs double-entry
+- Consumption stats (today/this month, per-brand, daily trend chart) count what you actually smoked regardless of who paid; cost stats count only what actually left your pocket
 
 ### 🔒 Secure Multi-User System
 - Google Authentication (NextAuth.js)

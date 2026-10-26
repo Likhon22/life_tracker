@@ -10,8 +10,10 @@ export async function getOrCreateCigaretteCategory(userId: string, session: mong
     return category;
 }
 
-function expenseNote(quantity: number, brandName: string, isSelf: boolean) {
-    return `${quantity}x ${brandName}${isSelf ? "" : " (friend)"}`;
+// Note reflects who SMOKED it (consumedBySelf), not who paid — the expense only exists
+// when paidBySelf is true, so the "(friend)" suffix clarifies it was bought for a friend.
+function expenseNote(quantity: number, brandName: string, consumedBySelf: boolean) {
+    return `${quantity}x ${brandName}${consumedBySelf ? "" : " (friend)"}`;
 }
 
 export async function createLinkedExpense(
@@ -21,7 +23,7 @@ export async function createLinkedExpense(
         amount: number;
         quantity: number;
         brandName: string;
-        isSelf: boolean;
+        consumedBySelf: boolean;
     },
     session: mongoose.ClientSession
 ) {
@@ -33,7 +35,7 @@ export async function createLinkedExpense(
             month: params.date.substring(0, 7),
             amount: params.amount,
             categoryId: category._id,
-            note: expenseNote(params.quantity, params.brandName, params.isSelf),
+            note: expenseNote(params.quantity, params.brandName, params.consumedBySelf),
         }],
         { session }
     );
@@ -42,7 +44,7 @@ export async function createLinkedExpense(
 
 export async function syncLinkedExpense(
     financeExpenseId: unknown,
-    params: { date: string; amount: number; quantity: number; brandName: string; isSelf: boolean },
+    params: { date: string; amount: number; quantity: number; brandName: string; consumedBySelf: boolean },
     session: mongoose.ClientSession
 ) {
     await FinanceExpense.findByIdAndUpdate(
@@ -51,7 +53,7 @@ export async function syncLinkedExpense(
             date: params.date,
             month: params.date.substring(0, 7),
             amount: params.amount,
-            note: expenseNote(params.quantity, params.brandName, params.isSelf),
+            note: expenseNote(params.quantity, params.brandName, params.consumedBySelf),
         },
         { session }
     );

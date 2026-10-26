@@ -10,18 +10,27 @@ function brandOf(log: CigaretteLog): CigaretteBrand | undefined {
     return typeof log.brandId === "string" ? undefined : log.brandId;
 }
 
+function describeLog(log: CigaretteLog): string {
+    if (log.consumedBySelf && log.paidBySelf) return "Myself";
+    if (!log.consumedBySelf && log.paidBySelf) return "Friend (you paid)";
+    if (log.consumedBySelf && !log.paidBySelf) return "Myself (friend paid)";
+    return "Friend (friend paid)";
+}
+
 export function LogList() {
     const { logs, deleteLog, updateLog } = useCigarettes();
     const [editingId, setEditingId] = useState<string | null>(null);
     const [editQuantity, setEditQuantity] = useState("");
     const [editAmount, setEditAmount] = useState("");
-    const [editIsSelf, setEditIsSelf] = useState(true);
+    const [editConsumedBySelf, setEditConsumedBySelf] = useState(true);
+    const [editPaidBySelf, setEditPaidBySelf] = useState(true);
 
     const handleSave = async (id: string) => {
         await updateLog(id, {
             quantity: parseInt(editQuantity, 10) || 1,
             amount: evaluateMath(editAmount),
-            isSelf: editIsSelf,
+            consumedBySelf: editConsumedBySelf,
+            paidBySelf: editPaidBySelf,
         });
         setEditingId(null);
     };
@@ -30,7 +39,8 @@ export function LogList() {
         setEditingId(log.id);
         setEditQuantity(log.quantity.toString());
         setEditAmount(log.amount.toString());
-        setEditIsSelf(log.isSelf);
+        setEditConsumedBySelf(log.consumedBySelf);
+        setEditPaidBySelf(log.paidBySelf);
     };
 
     return (
@@ -93,27 +103,57 @@ export function LogList() {
                                                                 onKeyDown={(e) => e.key === 'Enter' && handleSave(log.id)}
                                                             />
                                                         </div>
-                                                        <div className="grid grid-cols-2 gap-1.5 bg-white/5 rounded-xl p-1">
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => setEditIsSelf(true)}
-                                                                className={cn(
-                                                                    "flex items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-bold transition-all cursor-pointer",
-                                                                    editIsSelf ? "bg-blue-600 text-white" : "text-[#888888] hover:text-white"
-                                                                )}
-                                                            >
-                                                                <User className="w-3.5 h-3.5" /> Myself
-                                                            </button>
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => setEditIsSelf(false)}
-                                                                className={cn(
-                                                                    "flex items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-bold transition-all cursor-pointer",
-                                                                    !editIsSelf ? "bg-orange-600 text-white" : "text-[#888888] hover:text-white"
-                                                                )}
-                                                            >
-                                                                <Users className="w-3.5 h-3.5" /> Friend
-                                                            </button>
+                                                        <div className="grid grid-cols-2 gap-3">
+                                                            <div className="flex flex-col gap-1">
+                                                                <span className="text-[9px] font-bold text-[#888888] uppercase tracking-widest px-0.5">Smoked By</span>
+                                                                <div className="grid grid-cols-2 gap-1.5 bg-white/5 rounded-xl p-1">
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => setEditConsumedBySelf(true)}
+                                                                        className={cn(
+                                                                            "flex items-center justify-center gap-1 rounded-lg py-1.5 text-[11px] font-bold transition-all cursor-pointer",
+                                                                            editConsumedBySelf ? "bg-blue-600 text-white" : "text-[#888888] hover:text-white"
+                                                                        )}
+                                                                    >
+                                                                        <User className="w-3 h-3" /> Me
+                                                                    </button>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => setEditConsumedBySelf(false)}
+                                                                        className={cn(
+                                                                            "flex items-center justify-center gap-1 rounded-lg py-1.5 text-[11px] font-bold transition-all cursor-pointer",
+                                                                            !editConsumedBySelf ? "bg-orange-600 text-white" : "text-[#888888] hover:text-white"
+                                                                        )}
+                                                                    >
+                                                                        <Users className="w-3 h-3" /> Friend
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                            <div className="flex flex-col gap-1">
+                                                                <span className="text-[9px] font-bold text-[#888888] uppercase tracking-widest px-0.5">Paid By</span>
+                                                                <div className="grid grid-cols-2 gap-1.5 bg-white/5 rounded-xl p-1">
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => setEditPaidBySelf(true)}
+                                                                        className={cn(
+                                                                            "flex items-center justify-center gap-1 rounded-lg py-1.5 text-[11px] font-bold transition-all cursor-pointer",
+                                                                            editPaidBySelf ? "bg-blue-600 text-white" : "text-[#888888] hover:text-white"
+                                                                        )}
+                                                                    >
+                                                                        <User className="w-3 h-3" /> Me
+                                                                    </button>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => setEditPaidBySelf(false)}
+                                                                        className={cn(
+                                                                            "flex items-center justify-center gap-1 rounded-lg py-1.5 text-[11px] font-bold transition-all cursor-pointer",
+                                                                            !editPaidBySelf ? "bg-orange-600 text-white" : "text-[#888888] hover:text-white"
+                                                                        )}
+                                                                    >
+                                                                        <Users className="w-3 h-3" /> Friend
+                                                                    </button>
+                                                                </div>
+                                                            </div>
                                                         </div>
                                                         <div className="flex gap-2">
                                                             <button onClick={() => handleSave(log.id)} className="flex-1 bg-green-600 hover:bg-green-500 text-white rounded-xl p-2 transition-all cursor-pointer">
@@ -129,16 +169,16 @@ export function LogList() {
                                                         <div className="flex items-center gap-4">
                                                             <div className={cn(
                                                                 "p-3 rounded-xl transition-colors",
-                                                                log.isSelf ? "bg-white/5 text-[#888888] group-hover:text-blue-500" : "bg-orange-500/10 text-orange-500"
+                                                                log.consumedBySelf ? "bg-white/5 text-[#888888] group-hover:text-blue-500" : "bg-orange-500/10 text-orange-500"
                                                             )}>
-                                                                {log.isSelf ? <User className="w-5 h-5" /> : <Users className="w-5 h-5" />}
+                                                                {log.consumedBySelf ? <User className="w-5 h-5" /> : <Users className="w-5 h-5" />}
                                                             </div>
                                                             <div className="flex flex-col gap-0.5">
                                                                 <span className="text-sm font-bold text-white tracking-tight">
                                                                     {brand?.name || "Unknown"} &times; {log.quantity}
                                                                 </span>
                                                                 <span className="text-[11px] text-[#888888]">
-                                                                    {log.isSelf ? "Myself" : "Friend"}{log.note ? ` · ${log.note}` : ""}
+                                                                    {describeLog(log)}{log.note ? ` · ${log.note}` : ""}
                                                                 </span>
                                                             </div>
                                                         </div>

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import mongoose from "mongoose";
 import connectToDatabase from "@/lib/mongodb";
 import { CigaretteLog, CigaretteBrand, FinanceExpense } from "@/models";
-import { syncLinkedExpense } from "@/lib/cigaretteSync";
+import { createLinkedExpense, syncLinkedExpense } from "@/lib/cigaretteSync";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
@@ -14,7 +14,7 @@ export async function PUT(request: Request, props: { params: Promise<{ id: strin
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        const { date, brandId, quantity, amount, isSelf, note } = await request.json();
+        const { date, brandId, quantity, amount, consumedBySelf, paidBySelf, note } = await request.json();
 
         await connectToDatabase();
 
@@ -34,30 +34,58 @@ export async function PUT(request: Request, props: { params: Promise<{ id: strin
             brandId: nextBrandId,
             quantity: quantity ?? existingLog.quantity,
             amount: amount ?? existingLog.amount,
-            isSelf: isSelf ?? existingLog.isSelf,
+            consumedBySelf: consumedBySelf ?? existingLog.consumedBySelf,
+            paidBySelf: paidBySelf ?? existingLog.paidBySelf,
             note: note ?? existingLog.note,
         };
 
-        // The log update and its linked Finance expense update happen in one transaction,
-        // so the two can't end up showing different amounts/dates if one write fails.
+        // The log update and its Finance-expense side effect happen in one transaction.
+        // paidBySelf can flip either direction, so the expense may need to be created,
+        // synced, or removed depending on the before/after state.
         const dbSession = await mongoose.startSession();
         try {
             await dbSession.withTransaction(async () => {
-                await CigaretteLog.updateOne(
-                    { _id: params.id, userId: session.user.id },
-                    update,
-                    { session: dbSession }
-                );
+                let financeExpenseId = existingLog.financeExpenseId;
 
-                if (existingLog.financeExpenseId) {
+                if (update.paidBySelf && existingLog.financeExpenseId) {
+                    // Was paid by self, still is — just sync the existing expense.
                     await syncLinkedExpense(existingLog.financeExpenseId, {
                         date: update.date,
                         amount: update.amount,
                         quantity: update.quantity,
                         brandName: brand.name,
-                        isSelf: update.isSelf,
+                        consumedBySelf: update.consumedBySelf,
                     }, dbSession);
+                } else if (update.paidBySelf && !existingLog.financeExpenseId) {
+                    // Friend paid before, you pay now — create the expense that never existed.
+                    const expense = await createLinkedExpense({
+                        userId: session.user.id,
+                        date: update.date,
+                        amount: update.amount,
+                        quantity: update.quantity,
+                        brandName: brand.name,
+                        consumedBySelf: update.consumedBySelf,
+                    }, dbSession);
+                    financeExpenseId = expense._id;
+                } else if (!update.paidBySelf && existingLog.financeExpenseId) {
+                    // You paid before, friend pays now — that expense is no longer yours.
+                    await FinanceExpense.deleteOne(
+                        { _id: existingLog.financeExpenseId, userId: session.user.id },
+                        { session: dbSession }
+                    );
+                    financeExpenseId = undefined;
                 }
+                // else: friend paid before and still does — no expense ever existed, nothing to do.
+
+                // financeExpenseId needs an explicit $unset when it's cleared — assigning
+                // `undefined` in a plain update object gets silently dropped, not persisted.
+                await CigaretteLog.updateOne(
+                    { _id: params.id, userId: session.user.id },
+                    financeExpenseId
+                        ? { $set: { ...update, financeExpenseId } }
+                        : { $set: update, $unset: { financeExpenseId: 1 } },
+                    { session: dbSession }
+                );
             });
         } finally {
             await dbSession.endSession();

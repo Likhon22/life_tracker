@@ -17,7 +17,8 @@ export type CigaretteLog = {
     brandId: CigaretteBrand | string;
     quantity: number;
     amount: number;
-    isSelf: boolean;
+    consumedBySelf: boolean; // who smoked it
+    paidBySelf: boolean; // who paid for it — independent of who smoked it
     note?: string;
 };
 
@@ -26,7 +27,8 @@ type NewLogInput = {
     brandId: string;
     quantity: number;
     amount: number;
-    isSelf: boolean;
+    consumedBySelf: boolean;
+    paidBySelf: boolean;
     note?: string;
 };
 
@@ -216,14 +218,16 @@ export function CigaretteProvider({ children }: { children: React.ReactNode }) {
     };
 
     const stats = useMemo(() => {
+        // Consumption (sticks) is keyed on who SMOKED it. Cost is keyed on who PAID —
+        // a friend-paid log still counts toward your sticks but never toward your cost.
         const todayLogs = logs.filter((l) => l.date === todayStr);
-        const todaySelfCount = todayLogs.filter((l) => l.isSelf).reduce((sum, l) => sum + l.quantity, 0);
-        const todayFriendCount = todayLogs.filter((l) => !l.isSelf).reduce((sum, l) => sum + l.quantity, 0);
-        const todayCost = todayLogs.reduce((sum, l) => sum + l.amount, 0);
+        const todaySelfCount = todayLogs.filter((l) => l.consumedBySelf).reduce((sum, l) => sum + l.quantity, 0);
+        const todayFriendCount = todayLogs.filter((l) => !l.consumedBySelf).reduce((sum, l) => sum + l.quantity, 0);
+        const todayCost = todayLogs.filter((l) => l.paidBySelf).reduce((sum, l) => sum + l.amount, 0);
 
-        const monthSelfCount = logs.filter((l) => l.isSelf).reduce((sum, l) => sum + l.quantity, 0);
-        const monthFriendCount = logs.filter((l) => !l.isSelf).reduce((sum, l) => sum + l.quantity, 0);
-        const monthCost = logs.reduce((sum, l) => sum + l.amount, 0);
+        const monthSelfCount = logs.filter((l) => l.consumedBySelf).reduce((sum, l) => sum + l.quantity, 0);
+        const monthFriendCount = logs.filter((l) => !l.consumedBySelf).reduce((sum, l) => sum + l.quantity, 0);
+        const monthCost = logs.filter((l) => l.paidBySelf).reduce((sum, l) => sum + l.amount, 0);
 
         const brandMap = new Map<string, { brand: CigaretteBrand; sticks: number; cost: number }>();
         for (const log of logs) {
@@ -231,14 +235,14 @@ export function CigaretteProvider({ children }: { children: React.ReactNode }) {
             if (!brand) continue;
             const entry = brandMap.get(brand.id) ?? { brand, sticks: 0, cost: 0 };
             entry.sticks += log.quantity;
-            entry.cost += log.amount;
+            if (log.paidBySelf) entry.cost += log.amount;
             brandMap.set(brand.id, entry);
         }
         const byBrand = Array.from(brandMap.values()).sort((a, b) => b.sticks - a.sticks);
 
         const dateMap = new Map<string, number>();
         for (const log of logs) {
-            if (!log.isSelf) continue;
+            if (!log.consumedBySelf) continue;
             dateMap.set(log.date, (dateMap.get(log.date) ?? 0) + log.quantity);
         }
         const byDate = Array.from(dateMap.entries())

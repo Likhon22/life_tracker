@@ -14,7 +14,8 @@ export function LogEntryForm() {
     const [quantity, setQuantity] = useState("1");
     const [amount, setAmount] = useState("");
     const [date, setDate] = useState(format(new Date(), "yyyy-MM-dd"));
-    const [isSelf, setIsSelf] = useState(true);
+    const [consumedBySelf, setConsumedBySelf] = useState(true);
+    const [paidBySelf, setPaidBySelf] = useState(true);
     const [note, setNote] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isManageOpen, setIsManageOpen] = useState(false);
@@ -46,12 +47,14 @@ export function LogEntryForm() {
                 brandId,
                 quantity: qty,
                 amount: evaluatedAmount,
-                isSelf,
+                consumedBySelf,
+                paidBySelf,
                 note: note.trim() || undefined,
             });
             setQuantity("1");
             setNote("");
-            setIsSelf(true);
+            setConsumedBySelf(true);
+            setPaidBySelf(true);
             setDate(format(new Date(), "yyyy-MM-dd"));
         } finally {
             setIsSubmitting(false);
@@ -107,35 +110,62 @@ export function LogEntryForm() {
                     </div>
                 </div>
 
+                <div className="flex flex-col gap-2">
+                    <label className="text-[10px] font-bold text-[#AAAAAA] uppercase tracking-[0.2em] px-1">Date</label>
+                    <input
+                        type="date"
+                        value={date}
+                        onChange={(e) => setDate(e.target.value)}
+                        className="w-full bg-white/5 border border-white/5 focus:border-blue-500 focus:bg-white/[0.08] text-white rounded-xl py-3 px-4 outline-none transition-all font-medium text-sm [color-scheme:dark]"
+                    />
+                </div>
+
+                {/* Who smoked it vs. who paid for it are independent — e.g. a friend can cover your bill */}
                 <div className="grid grid-cols-2 gap-3">
                     <div className="flex flex-col gap-2">
-                        <label className="text-[10px] font-bold text-[#AAAAAA] uppercase tracking-[0.2em] px-1">Date</label>
-                        <input
-                            type="date"
-                            value={date}
-                            onChange={(e) => setDate(e.target.value)}
-                            className="w-full bg-white/5 border border-white/5 focus:border-blue-500 focus:bg-white/[0.08] text-white rounded-xl py-3 px-4 outline-none transition-all font-medium text-sm [color-scheme:dark]"
-                        />
-                    </div>
-                    <div className="flex flex-col gap-2">
-                        <label className="text-[10px] font-bold text-[#AAAAAA] uppercase tracking-[0.2em] px-1">For</label>
+                        <label className="text-[10px] font-bold text-[#AAAAAA] uppercase tracking-[0.2em] px-1">Smoked By</label>
                         <div className="grid grid-cols-2 gap-1.5 bg-white/5 rounded-xl p-1">
                             <button
                                 type="button"
-                                onClick={() => setIsSelf(true)}
+                                onClick={() => setConsumedBySelf(true)}
                                 className={cn(
                                     "flex items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-bold transition-all cursor-pointer",
-                                    isSelf ? "bg-blue-600 text-white shadow-lg shadow-blue-600/20" : "text-[#888888] hover:text-white"
+                                    consumedBySelf ? "bg-blue-600 text-white shadow-lg shadow-blue-600/20" : "text-[#888888] hover:text-white"
                                 )}
                             >
                                 <User className="w-3.5 h-3.5" /> Myself
                             </button>
                             <button
                                 type="button"
-                                onClick={() => setIsSelf(false)}
+                                onClick={() => setConsumedBySelf(false)}
                                 className={cn(
                                     "flex items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-bold transition-all cursor-pointer",
-                                    !isSelf ? "bg-orange-600 text-white shadow-lg shadow-orange-600/20" : "text-[#888888] hover:text-white"
+                                    !consumedBySelf ? "bg-orange-600 text-white shadow-lg shadow-orange-600/20" : "text-[#888888] hover:text-white"
+                                )}
+                            >
+                                <Users className="w-3.5 h-3.5" /> Friend
+                            </button>
+                        </div>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                        <label className="text-[10px] font-bold text-[#AAAAAA] uppercase tracking-[0.2em] px-1">Paid By</label>
+                        <div className="grid grid-cols-2 gap-1.5 bg-white/5 rounded-xl p-1">
+                            <button
+                                type="button"
+                                onClick={() => setPaidBySelf(true)}
+                                className={cn(
+                                    "flex items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-bold transition-all cursor-pointer",
+                                    paidBySelf ? "bg-blue-600 text-white shadow-lg shadow-blue-600/20" : "text-[#888888] hover:text-white"
+                                )}
+                            >
+                                <User className="w-3.5 h-3.5" /> Myself
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setPaidBySelf(false)}
+                                className={cn(
+                                    "flex items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-bold transition-all cursor-pointer",
+                                    !paidBySelf ? "bg-orange-600 text-white shadow-lg shadow-orange-600/20" : "text-[#888888] hover:text-white"
                                 )}
                             >
                                 <Users className="w-3.5 h-3.5" /> Friend
@@ -143,6 +173,11 @@ export function LogEntryForm() {
                         </div>
                     </div>
                 </div>
+                {!paidBySelf && (
+                    <div className="flex items-center gap-1.5 text-[11px] text-orange-400 bg-orange-500/5 px-3 py-2 rounded-xl -mt-2">
+                        Friend paid — this won&apos;t be added to your Finance cost.
+                    </div>
+                )}
 
                 <input
                     type="text"

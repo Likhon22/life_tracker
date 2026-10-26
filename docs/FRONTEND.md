@@ -88,7 +88,9 @@ A one-off migration (`scripts/categorize-habits.ts`) bulk-assigned every pre-exi
 
 ## Cigarette tracker ↔ Finance link
 
-`cigarettes/CigaretteProvider.tsx` is a self-contained feature (own brands + logs, own stats computed client-side via `useMemo` over the fetched logs), but every log also creates a `FinanceExpense` under the user's "Cigarettes" category — the API does this server-side (`src/lib/cigaretteSync.ts`), not the frontend, so the link survives even if the cigarette log is later edited or deleted directly in the DB. The frontend never has to reconcile two sources of truth for cost; it just shows the logs and lets Finance's own queries pick up the resulting expenses on their own next fetch.
+`cigarettes/CigaretteProvider.tsx` is a self-contained feature (own brands + logs, own stats computed client-side via `useMemo` over the fetched logs), but a log creates a `FinanceExpense` under the user's "Cigarettes" category whenever `paidBySelf` is true — the API does this server-side (`src/lib/cigaretteSync.ts`), not the frontend, so the link survives even if the cigarette log is later edited or deleted directly in the DB. The frontend never has to reconcile two sources of truth for cost; it just shows the logs and lets Finance's own queries pick up the resulting expenses on their own next fetch.
+
+`consumedBySelf` (who smoked it) and `paidBySelf` (who paid) are independent fields — a friend can cover your bill, or you can cover theirs. Consumption stats (`todaySelfCount`, `monthSelfCount`, the daily trend chart) are keyed on `consumedBySelf`; cost stats (`todayCost`, `monthCost`, per-brand cost) are keyed on `paidBySelf`. A log where a friend paid still counts toward your sticks smoked, never toward your cost. Editing a log can flip `paidBySelf` in either direction, so `PUT /api/cigarettes/logs/:id` has to create, sync, or delete the linked expense depending on the before/after state — see `docs/API.md`.
 
 ## Known remaining inefficiencies (not fixed, listed for visibility)
 
