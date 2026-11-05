@@ -34,6 +34,10 @@ export type Budget = {
 
 export const COMMON_ICONS = [
     "Wallet", "ShoppingCart", "Bus", "Car", "Utensils", "Coffee", "Apple", "Beer", "Pizza", "Wine",
+    // Food & drink
+    "Egg", "EggFried", "Drumstick", "Beef", "Ham", "Hamburger", "Fish", "Banana", "Grape", "Cherry",
+    "Citrus", "Carrot", "Salad", "Sandwich", "Soup", "Cookie", "Croissant", "Donut", "Candy", "Popcorn",
+    "IceCreamCone", "Milk", "Wheat", "CupSoda", "PartyPopper", "Cigarette",
     "Gift", "ShoppingBag", "Briefcase", "Home", "Wifi", "Zap", "Droplets", "Smartphone", "Tv", "Music",
     "Plane", "Map", "Camera", "Heart", "Stethoscope", "Pill", "Gamepad", "Dumbbell", "Book", "GraduationCap",
     "Baby", "PawPrint", "TreePine", "Flower2", "Sun", "Moon", "Cloud", "Scissors", "Trash2", "Settings",
